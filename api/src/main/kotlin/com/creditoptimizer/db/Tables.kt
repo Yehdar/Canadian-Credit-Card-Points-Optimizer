@@ -22,3 +22,24 @@ object CardEarnRates : Table("card_earn_rates") {
 
     override val primaryKey = PrimaryKey(id)
 }
+
+object SpendingProfiles : Table("spending_profiles") {
+    val id            = integer("id").autoIncrement()
+    val name          = varchar("name", 100)
+    val profileType   = varchar("profile_type", 20)   // 'personal' | 'business' | 'partner'
+
+    // Monthly CAD spend per category
+    val groceries     = decimal("groceries",     10, 2)
+    val dining        = decimal("dining",        10, 2)
+    val gas           = decimal("gas",           10, 2)
+    val travel        = decimal("travel",        10, 2)
+    val entertainment = decimal("entertainment", 10, 2)
+    val subscriptions = decimal("subscriptions", 10, 2)
+    val transit       = decimal("transit",       10, 2)
+    val other         = decimal("other",         10, 2)
+
+    val createdAt     = timestamp("created_at")
+    val updatedAt     = timestamp("updated_at")
+
+    override val primaryKey = PrimaryKey(id)
+}

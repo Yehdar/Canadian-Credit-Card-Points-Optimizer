@@ -1,6 +1,7 @@
 package com.creditoptimizer.plugins
 
 import com.creditoptimizer.dto.CreateProfileRequest
+import com.creditoptimizer.dto.HouseholdOptimizationRequest
 import com.creditoptimizer.dto.RecommendationsRequest
 import com.creditoptimizer.dto.UpdateProfileRequest
 import com.creditoptimizer.service.PointsService
@@ -59,6 +60,28 @@ fun Application.configureRouting() {
                 }
 
                 call.respond(HttpStatusCode.OK, results)
+            }
+
+            // ------------------------------------------------------------------
+            // Household Optimization
+            // POST { "profileIds": [1, 2] }  →  HouseholdOptimizationResult
+            // ------------------------------------------------------------------
+            post("/optimize") {
+                val request = try {
+                    call.receive<HouseholdOptimizationRequest>()
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid request body"))
+                    return@post
+                }
+
+                val result = try {
+                    pointsService.optimizeHousehold(request)
+                } catch (e: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to (e.message ?: "Bad request")))
+                    return@post
+                }
+
+                call.respond(HttpStatusCode.OK, result)
             }
 
             // ------------------------------------------------------------------

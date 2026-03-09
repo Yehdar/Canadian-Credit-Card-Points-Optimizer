@@ -4,12 +4,13 @@ import { useState } from "react";
 import SpendingForm from "@/app/components/SpendingForm";
 import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 import CardResults from "@/app/components/CardResults";
+import HouseholdOptimizer from "@/app/components/HouseholdOptimizer";
 import { fetchRecommendations } from "@/lib/api";
 import type { RecommendationResult, SpendingBreakdown } from "@/lib/api";
 import { useProfile } from "@/context/ProfileContext";
 
 export default function Home() {
-  const { activeProfile, saveActiveProfileSpending } = useProfile();
+  const { activeProfile, saveActiveProfileSpending, profiles } = useProfile();
 
   const [results, setResults] = useState<RecommendationResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -68,6 +69,10 @@ export default function Home() {
           <div className="mt-8">
             <CardResults results={results} />
           </div>
+        )}
+
+        {profiles.length >= 2 && (
+          <HouseholdOptimizer profiles={profiles} />
         )}
       </div>
     </div>

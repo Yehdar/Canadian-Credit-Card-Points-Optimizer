@@ -8,6 +8,8 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 class PointsService {
 
+    private val profileService = ProfileService()
+
     fun getAllCards(): List<CardSummary> = transaction {
         CreditCards.selectAll().map { row ->
             CardSummary(
@@ -21,6 +23,30 @@ class PointsService {
         }
     }
 
+    /**
+     * Entry point that accepts a [RecommendationsRequest].
+     * Exactly one of [RecommendationsRequest.profileId] or
+     * [RecommendationsRequest.spending] must be non-null.
+     *
+     * @throws IllegalArgumentException if neither or both fields are provided,
+     *   or if the referenced profile does not exist.
+     */
+    fun calculateRecommendations(request: RecommendationsRequest): List<RecommendationResult> {
+        require((request.profileId == null) != (request.spending == null)) {
+            "Provide exactly one of 'profileId' or 'spending', not both (or neither)."
+        }
+
+        val spending = if (request.profileId != null) {
+            profileService.getProfile(request.profileId)?.spending
+                ?: throw IllegalArgumentException("Profile ${request.profileId} not found")
+        } else {
+            request.spending!!
+        }
+
+        return calculateRecommendations(spending)
+    }
+
+    /** Core calculation — accepts a resolved [SpendingBreakdown] directly. */
     fun calculateRecommendations(spending: SpendingBreakdown): List<RecommendationResult> {
         val spendMap = mapOf(
             "groceries"     to spending.groceries,

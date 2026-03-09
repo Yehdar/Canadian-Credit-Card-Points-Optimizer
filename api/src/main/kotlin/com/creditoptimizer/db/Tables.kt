@@ -1,6 +1,8 @@
 package com.creditoptimizer.db
 
 import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.sql.javatime.timestamp
 
 object CreditCards : Table("credit_cards") {
     val id             = integer("id").autoIncrement()
@@ -23,8 +25,8 @@ object CardEarnRates : Table("card_earn_rates") {
     override val primaryKey = PrimaryKey(id)
 }
 
-object SpendingProfiles : Table("spending_profiles") {
-    val id            = integer("id").autoIncrement()
+// IntIdTable provides `id` (auto-increment PK) and `primaryKey` automatically.
+object SpendingProfiles : IntIdTable("spending_profiles") {
     val name          = varchar("name", 100)
     val profileType   = varchar("profile_type", 20)   // 'personal' | 'business' | 'partner'
 
@@ -40,6 +42,4 @@ object SpendingProfiles : Table("spending_profiles") {
 
     val createdAt     = timestamp("created_at")
     val updatedAt     = timestamp("updated_at")
-
-    override val primaryKey = PrimaryKey(id)
 }

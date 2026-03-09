@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import SpendingForm from "@/app/components/SpendingForm";
 import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 import CardResults from "@/app/components/CardResults";
@@ -16,25 +16,39 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(spending: SpendingBreakdown) {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // Prefer profile-based recommendation when a profile is active
-      const args = activeProfile
-        ? { profileId: activeProfile.id }
-        : { spending };
-      const data = await fetchRecommendations(args);
-      setResults(data);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "An unexpected error occurred. Is the backend running?"
-      );
-    } finally {
-      setIsLoading(false);
+  // Shared fetch logic — used by both the form submit and the auto-refresh effect
+  const runRecommendations = useCallback(
+    async (args: { profileId: number } | { spending: SpendingBreakdown }) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await fetchRecommendations(args);
+        setResults(data);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "An unexpected error occurred. Is the backend running?"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  // Auto re-fetch whenever the active profile changes
+  useEffect(() => {
+    if (activeProfile) {
+      runRecommendations({ profileId: activeProfile.id });
+    } else {
+      setResults([]);
     }
+  }, [activeProfile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleSubmit(spending: SpendingBreakdown) {
+    const args = activeProfile ? { profileId: activeProfile.id } : { spending };
+    runRecommendations(args);
   }
 
   return (

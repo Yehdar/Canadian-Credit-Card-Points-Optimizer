@@ -5,6 +5,7 @@ import com.creditoptimizer.dto.HouseholdOptimizationRequest
 import com.creditoptimizer.dto.RecommendationsRequest
 import com.creditoptimizer.dto.UpdateProfileRequest
 import com.creditoptimizer.service.PointsService
+import com.creditoptimizer.service.ProfileNotFoundException
 import com.creditoptimizer.service.ProfileService
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -54,6 +55,9 @@ fun Application.configureRouting() {
 
                 val results = try {
                     pointsService.calculateRecommendations(request)
+                } catch (e: ProfileNotFoundException) {
+                    call.respond(HttpStatusCode.NotFound, mapOf("error" to e.message))
+                    return@post
                 } catch (e: IllegalArgumentException) {
                     call.respond(HttpStatusCode.BadRequest, mapOf("error" to (e.message ?: "Bad request")))
                     return@post
@@ -76,6 +80,9 @@ fun Application.configureRouting() {
 
                 val result = try {
                     pointsService.optimizeHousehold(request)
+                } catch (e: ProfileNotFoundException) {
+                    call.respond(HttpStatusCode.NotFound, mapOf("error" to e.message))
+                    return@post
                 } catch (e: IllegalArgumentException) {
                     call.respond(HttpStatusCode.BadRequest, mapOf("error" to (e.message ?: "Bad request")))
                     return@post

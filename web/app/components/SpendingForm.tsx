@@ -5,7 +5,6 @@ import type { SpendingBreakdown } from "@/lib/api";
 
 interface SpendingFormProps {
   onSubmit: (spending: SpendingBreakdown) => void;
-  onSaveProfile?: (spending: SpendingBreakdown) => Promise<void>;
   isLoading: boolean;
   initialSpending?: SpendingBreakdown;
   activeProfileName?: string;
@@ -29,7 +28,6 @@ const DEFAULT_SPENDING: SpendingBreakdown = {
 
 export default function SpendingForm({
   onSubmit,
-  onSaveProfile,
   isLoading,
   initialSpending,
   activeProfileName,
@@ -37,7 +35,6 @@ export default function SpendingForm({
   const [spending, setSpending] = useState<SpendingBreakdown>(
     initialSpending ?? DEFAULT_SPENDING
   );
-  const [isSaving, setIsSaving] = useState(false);
 
   // Sync form when the active profile changes
   useEffect(() => {
@@ -46,16 +43,6 @@ export default function SpendingForm({
 
   function handleChange(key: keyof SpendingBreakdown, value: string) {
     setSpending((prev) => ({ ...prev, [key]: parseFloat(value) || 0 }));
-  }
-
-  async function handleSave() {
-    if (!onSaveProfile) return;
-    setIsSaving(true);
-    try {
-      await onSaveProfile(spending);
-    } finally {
-      setIsSaving(false);
-    }
   }
 
   return (
@@ -74,16 +61,6 @@ export default function SpendingForm({
               : "Enter your average monthly spend per category to see which Canadian credit card maximizes your rewards."}
           </p>
         </div>
-        {onSaveProfile && (
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="shrink-0 rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-          >
-            {isSaving ? "Saving..." : "Save to Profile"}
-          </button>
-        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -24,23 +24,25 @@ class PointsService {
     }
 
     /**
-     * Entry point that accepts a [RecommendationsRequest].
-     * Exactly one of [RecommendationsRequest.profileId] or
-     * [RecommendationsRequest.spending] must be non-null.
+     * Search-first entry point: stateless recommendations require no saved profile.
      *
-     * @throws IllegalArgumentException if neither or both fields are provided,
-     *   or if the referenced profile does not exist.
+     * Resolution order:
+     *  1. [RecommendationsRequest.profileId] — loads spending from the DB (priority).
+     *  2. [RecommendationsRequest.spending]  — uses inline values directly.
+     *  3. Neither provided               — returns 400.
+     *
+     * Sending both fields is allowed; [profileId] wins.
      */
     fun calculateRecommendations(request: RecommendationsRequest): List<RecommendationResult> {
-        require((request.profileId == null) != (request.spending == null)) {
-            "Provide exactly one of 'profileId' or 'spending', not both (or neither)."
-        }
-
-        val spending = if (request.profileId != null) {
-            profileService.getProfile(request.profileId)?.spending
-                ?: throw ProfileNotFoundException(request.profileId)
-        } else {
-            request.spending!!
+        val spending = when {
+            request.profileId != null -> {
+                profileService.getProfile(request.profileId)?.spending
+                    ?: throw ProfileNotFoundException(request.profileId)
+            }
+            request.spending != null -> request.spending
+            else -> throw IllegalArgumentException(
+                "Provide either 'profileId' or 'spending' in the request body."
+            )
         }
 
         return calculateRecommendations(spending)

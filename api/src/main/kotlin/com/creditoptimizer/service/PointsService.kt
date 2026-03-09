@@ -38,7 +38,7 @@ class PointsService {
 
         val spending = if (request.profileId != null) {
             profileService.getProfile(request.profileId)?.spending
-                ?: throw IllegalArgumentException("Profile ${request.profileId} not found")
+                ?: throw ProfileNotFoundException(request.profileId)
         } else {
             request.spending!!
         }
@@ -84,9 +84,11 @@ class PointsService {
         val results = cardRows.values.map { card ->
             val breakdown = spendMap.entries
                 .filter { (_, amount) -> amount > 0.0 }
-                .map { (category, monthlySpend) ->
+                .mapNotNull { (category, monthlySpend) ->
+                    val earnRate = card.earnRates.getOrDefault(category, 0.0)
+                    // Skip categories this card earns nothing on — keeps breakdown clean
+                    if (earnRate == 0.0) return@mapNotNull null
                     val annualSpend  = monthlySpend * 12.0
-                    val earnRate     = card.earnRates.getOrDefault(category, 0.0)
                     val pointsEarned = annualSpend * earnRate
                     val valueCAD     = round2(pointsEarned * card.cpp / 100.0)
                     CategoryBreakdown(
@@ -130,7 +132,7 @@ class PointsService {
 
         val assignments = request.profileIds.map { profileId ->
             val profile = profileService.getProfile(profileId)
-                ?: throw IllegalArgumentException("Profile $profileId not found")
+                ?: throw ProfileNotFoundException(profileId)
 
             val best = calculateRecommendations(profile.spending).firstOrNull()
                 ?: throw IllegalStateException("No card data available — is the database seeded?")

@@ -2,11 +2,15 @@
 
 import { useState } from "react";
 import SpendingForm from "@/app/components/SpendingForm";
+import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 import CardResults from "@/app/components/CardResults";
 import { fetchRecommendations } from "@/lib/api";
 import type { RecommendationResult, SpendingBreakdown } from "@/lib/api";
+import { useProfile } from "@/context/ProfileContext";
 
 export default function Home() {
+  const { activeProfile, saveActiveProfileSpending } = useProfile();
+
   const [results, setResults] = useState<RecommendationResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +19,11 @@ export default function Home() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await fetchRecommendations(spending);
+      // Prefer profile-based recommendation when a profile is active
+      const args = activeProfile
+        ? { profileId: activeProfile.id }
+        : { spending };
+      const data = await fetchRecommendations(args);
       setResults(data);
     } catch (err) {
       setError(
@@ -40,7 +48,15 @@ export default function Home() {
           </p>
         </header>
 
-        <SpendingForm onSubmit={handleSubmit} isLoading={isLoading} />
+        <ProfileSwitcher />
+
+        <SpendingForm
+          onSubmit={handleSubmit}
+          onSaveProfile={activeProfile ? saveActiveProfileSpending : undefined}
+          isLoading={isLoading}
+          initialSpending={activeProfile?.spending}
+          activeProfileName={activeProfile?.name}
+        />
 
         {error && (
           <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400">

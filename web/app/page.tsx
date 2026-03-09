@@ -1,31 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import SpendingForm from "@/app/components/SpendingForm";
+import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 import CardResults from "@/app/components/CardResults";
+import HouseholdOptimizer from "@/app/components/HouseholdOptimizer";
 import { fetchRecommendations } from "@/lib/api";
 import type { RecommendationResult, SpendingBreakdown } from "@/lib/api";
+import { useProfile } from "@/context/ProfileContext";
 
 export default function Home() {
+  const { activeProfile, saveActiveProfileSpending, profiles } = useProfile();
+
   const [results, setResults] = useState<RecommendationResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(spending: SpendingBreakdown) {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await fetchRecommendations(spending);
-      setResults(data);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "An unexpected error occurred. Is the backend running?"
-      );
-    } finally {
-      setIsLoading(false);
+  // Shared fetch logic — used by both the form submit and the auto-refresh effect
+  const runRecommendations = useCallback(
+    async (args: { profileId: number } | { spending: SpendingBreakdown }) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await fetchRecommendations(args);
+        setResults(data);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "An unexpected error occurred. Is the backend running?"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  // Auto re-fetch whenever the active profile changes
+  useEffect(() => {
+    if (activeProfile) {
+      runRecommendations({ profileId: activeProfile.id });
+    } else {
+      setResults([]);
     }
+  }, [activeProfile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleSubmit(spending: SpendingBreakdown) {
+    const args = activeProfile ? { profileId: activeProfile.id } : { spending };
+    runRecommendations(args);
   }
 
   return (
@@ -40,7 +63,15 @@ export default function Home() {
           </p>
         </header>
 
-        <SpendingForm onSubmit={handleSubmit} isLoading={isLoading} />
+        <ProfileSwitcher />
+
+        <SpendingForm
+          onSubmit={handleSubmit}
+          onSaveProfile={activeProfile ? saveActiveProfileSpending : undefined}
+          isLoading={isLoading}
+          initialSpending={activeProfile?.spending}
+          activeProfileName={activeProfile?.name}
+        />
 
         {error && (
           <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
@@ -52,6 +83,10 @@ export default function Home() {
           <div className="mt-8">
             <CardResults results={results} />
           </div>
+        )}
+
+        {profiles.length >= 2 && (
+          <HouseholdOptimizer profiles={profiles} />
         )}
       </div>
     </div>

@@ -8,6 +8,8 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 class PointsService {
 
+    private val profileService = ProfileService()
+
     fun getAllCards(): List<CardSummary> = transaction {
         CreditCards.selectAll().map { row ->
             CardSummary(
@@ -21,6 +23,30 @@ class PointsService {
         }
     }
 
+    /**
+     * Entry point that accepts a [RecommendationsRequest].
+     * Exactly one of [RecommendationsRequest.profileId] or
+     * [RecommendationsRequest.spending] must be non-null.
+     *
+     * @throws IllegalArgumentException if neither or both fields are provided,
+     *   or if the referenced profile does not exist.
+     */
+    fun calculateRecommendations(request: RecommendationsRequest): List<RecommendationResult> {
+        require((request.profileId == null) != (request.spending == null)) {
+            "Provide exactly one of 'profileId' or 'spending', not both (or neither)."
+        }
+
+        val spending = if (request.profileId != null) {
+            profileService.getProfile(request.profileId)?.spending
+                ?: throw ProfileNotFoundException(request.profileId)
+        } else {
+            request.spending!!
+        }
+
+        return calculateRecommendations(spending)
+    }
+
+    /** Core calculation — accepts a resolved [SpendingBreakdown] directly. */
     fun calculateRecommendations(spending: SpendingBreakdown): List<RecommendationResult> {
         val spendMap = mapOf(
             "groceries"     to spending.groceries,
@@ -58,9 +84,11 @@ class PointsService {
         val results = cardRows.values.map { card ->
             val breakdown = spendMap.entries
                 .filter { (_, amount) -> amount > 0.0 }
-                .map { (category, monthlySpend) ->
+                .mapNotNull { (category, monthlySpend) ->
+                    val earnRate = card.earnRates.getOrDefault(category, 0.0)
+                    // Skip categories this card earns nothing on — keeps breakdown clean
+                    if (earnRate == 0.0) return@mapNotNull null
                     val annualSpend  = monthlySpend * 12.0
-                    val earnRate     = card.earnRates.getOrDefault(category, 0.0)
                     val pointsEarned = annualSpend * earnRate
                     val valueCAD     = round2(pointsEarned * card.cpp / 100.0)
                     CategoryBreakdown(
@@ -82,6 +110,61 @@ class PointsService {
         }
 
         return results.sortedByDescending { it.netAnnualValue }
+    }
+
+    /**
+     * For each requested profile, independently finds that profile's best card,
+     * then aggregates the results into a [HouseholdOptimizationResult].
+     *
+     * "Dual-card strategy" is flagged whenever the profiles are assigned to
+     * at least two distinct cards — meaning household members benefit from
+     * splitting rather than sharing one card.
+     *
+     * @throws IllegalArgumentException for invalid input or missing profiles.
+     */
+    fun optimizeHousehold(request: HouseholdOptimizationRequest): HouseholdOptimizationResult {
+        require(request.profileIds.size in 2..4) {
+            "Provide 2 to 4 profile IDs for household optimization"
+        }
+        require(request.profileIds.distinct().size == request.profileIds.size) {
+            "Profile IDs must be unique"
+        }
+
+        val assignments = request.profileIds.map { profileId ->
+            val profile = profileService.getProfile(profileId)
+                ?: throw ProfileNotFoundException(profileId)
+
+            val best = calculateRecommendations(profile.spending).firstOrNull()
+                ?: throw IllegalStateException("No card data available — is the database seeded?")
+
+            ProfileOptimization(
+                profile        = ProfileSummaryDto(profile.id, profile.name, profile.profileType),
+                bestCard       = best.card,
+                breakdown      = best.breakdown,
+                netAnnualValue = best.netAnnualValue
+            )
+        }.sortedByDescending { it.netAnnualValue }
+
+        val uniqueCardIds       = assignments.map { it.bestCard.id }.distinct()
+        val isDual              = uniqueCardIds.size > 1
+        val combined            = round2(assignments.sumOf { it.netAnnualValue })
+
+        val insight = if (isDual) {
+            val pairings = assignments.joinToString(" + ") {
+                "${it.profile.name} → ${it.bestCard.name}"
+            }
+            "Dual-card strategy: $pairings. Combined annual value: \$$combined CAD."
+        } else {
+            "All profiles share the same optimal card: ${assignments.first().bestCard.name}. " +
+                "Combined annual value: \$$combined CAD."
+        }
+
+        return HouseholdOptimizationResult(
+            assignments            = assignments,
+            combinedNetAnnualValue = combined,
+            isDualCardStrategy     = isDual,
+            insight                = insight
+        )
     }
 
     private data class CardRow(

@@ -1,5 +1,7 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
+export type ProfileType = "personal" | "business" | "partner";
+
 export interface CardSummary {
   id: number;
   name: string;
@@ -35,6 +37,90 @@ export interface SpendingBreakdown {
   other: number;
 }
 
+export interface Profile {
+  id: number;
+  name: string;
+  profileType: ProfileType;
+  spending: SpendingBreakdown;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProfilePayload {
+  name: string;
+  profileType: ProfileType;
+  spending: SpendingBreakdown;
+}
+
+export interface UpdateProfilePayload {
+  name?: string;
+  profileType?: ProfileType;
+  spending?: SpendingBreakdown;
+}
+
+export async function fetchProfiles(): Promise<Profile[]> {
+  const res = await fetch(`${API_BASE}/api/profiles`);
+  if (!res.ok) throw new Error(`Failed to fetch profiles: ${res.status}`);
+  return res.json();
+}
+
+export async function createProfile(payload: CreateProfilePayload): Promise<Profile> {
+  const res = await fetch(`${API_BASE}/api/profiles`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`Failed to create profile: ${res.status}`);
+  return res.json();
+}
+
+export async function updateProfile(id: number, payload: UpdateProfilePayload): Promise<Profile> {
+  const res = await fetch(`${API_BASE}/api/profiles/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`Failed to update profile: ${res.status}`);
+  return res.json();
+}
+
+export async function deleteProfile(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/profiles/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Failed to delete profile: ${res.status}`);
+}
+
+export interface ProfileSummaryDto {
+  id: number;
+  name: string;
+  profileType: ProfileType;
+}
+
+export interface ProfileOptimization {
+  profile: ProfileSummaryDto;
+  bestCard: CardSummary;
+  breakdown: CategoryBreakdown[];
+  netAnnualValue: number;
+}
+
+export interface HouseholdOptimizationResult {
+  assignments: ProfileOptimization[];
+  combinedNetAnnualValue: number;
+  isDualCardStrategy: boolean;
+  insight: string;
+}
+
+export async function fetchHouseholdOptimization(
+  profileIds: number[]
+): Promise<HouseholdOptimizationResult> {
+  const res = await fetch(`${API_BASE}/api/optimize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ profileIds }),
+  });
+  if (!res.ok) throw new Error(`Failed to optimize household: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchCards(): Promise<CardSummary[]> {
   const res = await fetch(`${API_BASE}/api/cards`);
   if (!res.ok) throw new Error(`Failed to fetch cards: ${res.status}`);
@@ -42,12 +128,12 @@ export async function fetchCards(): Promise<CardSummary[]> {
 }
 
 export async function fetchRecommendations(
-  spending: SpendingBreakdown
+  args: { profileId: number } | { spending: SpendingBreakdown }
 ): Promise<RecommendationResult[]> {
   const res = await fetch(`${API_BASE}/api/recommendations`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ spending }),
+    body: JSON.stringify(args),
   });
   if (!res.ok) throw new Error(`Failed to fetch recommendations: ${res.status}`);
   return res.json();

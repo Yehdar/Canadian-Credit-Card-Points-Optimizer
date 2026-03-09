@@ -2,8 +2,20 @@ package com.creditoptimizer.dto
 
 import kotlinx.serialization.Serializable
 
+/** Legacy direct-spend request — kept for backwards compatibility. */
 @Serializable
 data class SpendingRequest(val spending: SpendingBreakdown)
+
+/**
+ * Unified recommendations request.
+ * Callers supply EITHER a saved [profileId] OR an inline [spending] breakdown.
+ * Supplying both is an error; supplying neither is an error.
+ */
+@Serializable
+data class RecommendationsRequest(
+    val profileId: Int?              = null,
+    val spending:  SpendingBreakdown? = null
+)
 
 @Serializable
 data class SpendingBreakdown(

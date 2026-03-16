@@ -96,10 +96,10 @@ function ResultCard({ result, index }: { result: RecommendationResult; index: nu
 
   return (
     <div
-      className={`group rounded-2xl bg-white p-6 transition-all duration-200 ${
+      className={`group rounded-2xl bg-white p-6 transition-all duration-200 dark:bg-[#111111] ${
         isBest
-          ? "border border-black"
-          : "border border-[#EBEBEB] hover:border-[#C8C8C8]"
+          ? "border border-black dark:border-[#EDEDED]"
+          : "border border-[#EBEBEB] hover:border-[#C8C8C8] dark:border-[#1F1F1F] dark:hover:border-[#333333]"
       }`}
     >
       {/* Header row */}
@@ -107,28 +107,28 @@ function ResultCard({ result, index }: { result: RecommendationResult; index: nu
         <div className="flex-1 min-w-0">
           {/* Rank + badge */}
           <div className="mb-2 flex items-center gap-2">
-            <span className="text-[11px] font-medium uppercase tracking-widest text-[#A8A8A8]">
+            <span className="text-[11px] font-medium uppercase tracking-widest text-[#A8A8A8] dark:text-[#555555]">
               #{index + 1}
             </span>
             {isBest && (
-              <span className="rounded-full bg-black px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-white">
+              <span className="rounded-full bg-black px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-white dark:bg-[#EDEDED] dark:text-[#0A0A0A]">
                 Best Match
               </span>
             )}
           </div>
 
           {/* Card name */}
-          <h3 className="text-[17px] font-semibold leading-tight tracking-tight text-black">
+          <h3 className="text-[17px] font-semibold leading-tight tracking-tight text-black dark:text-[#EDEDED]">
             {result.card.name}
           </h3>
 
           {/* Meta row */}
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="text-[12px] text-[#6B6B6B]">{result.card.issuer}</span>
-            <span className="text-[#EBEBEB]">·</span>
-            <span className="text-[12px] text-[#6B6B6B]">{result.card.pointsCurrency}</span>
-            <span className="text-[#EBEBEB]">·</span>
-            <span className="text-[12px] text-[#6B6B6B]">{formatCAD(result.card.annualFee)}/yr</span>
+            <span className="text-[12px] text-[#6B6B6B] dark:text-[#888888]">{result.card.issuer}</span>
+            <span className="text-[#EBEBEB] dark:text-[#1F1F1F]">·</span>
+            <span className="text-[12px] text-[#6B6B6B] dark:text-[#888888]">{result.card.pointsCurrency}</span>
+            <span className="text-[#EBEBEB] dark:text-[#1F1F1F]">·</span>
+            <span className="text-[12px] text-[#6B6B6B] dark:text-[#888888]">{formatCAD(result.card.annualFee)}/yr</span>
             <span className="ml-1">{NETWORK_MARKS[result.card.cardType]}</span>
           </div>
         </div>
@@ -136,29 +136,31 @@ function ResultCard({ result, index }: { result: RecommendationResult; index: nu
         {/* Hero stat */}
         <div className="shrink-0 text-right">
           <p className={`text-[28px] font-bold leading-none tracking-tight ${
-            isPositive ? "text-black" : "text-[#6B6B6B]"
+            isPositive
+              ? "text-black dark:text-[#EDEDED]"
+              : "text-[#6B6B6B] dark:text-[#555555]"
           }`}>
             {isPositive ? "+" : ""}{formatCAD(result.netAnnualValue)}
           </p>
-          <p className="mt-1 text-[11px] uppercase tracking-widest text-[#A8A8A8]">net / year</p>
+          <p className="mt-1 text-[11px] uppercase tracking-widest text-[#A8A8A8] dark:text-[#555555]">net / year</p>
         </div>
       </div>
 
       {/* Stats strip */}
-      <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#EBEBEB] bg-[#EBEBEB]">
-        <div className="bg-[#F7F7F7] px-4 py-3">
-          <p className="text-[11px] font-medium uppercase tracking-widest text-[#A8A8A8]">
+      <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#EBEBEB] bg-[#EBEBEB] dark:border-[#1F1F1F] dark:bg-[#1F1F1F]">
+        <div className="bg-[#F7F7F7] px-4 py-3 dark:bg-[#0A0A0A]">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-[#A8A8A8] dark:text-[#555555]">
             Rewards value
           </p>
-          <p className="mt-0.5 text-[15px] font-semibold text-black">
+          <p className="mt-0.5 text-[15px] font-semibold text-black dark:text-[#EDEDED]">
             {formatCAD(result.totalValueCAD)}
           </p>
         </div>
-        <div className="bg-[#F7F7F7] px-4 py-3">
-          <p className="text-[11px] font-medium uppercase tracking-widest text-[#A8A8A8]">
+        <div className="bg-[#F7F7F7] px-4 py-3 dark:bg-[#0A0A0A]">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-[#A8A8A8] dark:text-[#555555]">
             Points earned
           </p>
-          <p className="mt-0.5 text-[15px] font-semibold text-black">
+          <p className="mt-0.5 text-[15px] font-semibold text-black dark:text-[#EDEDED]">
             {result.totalPointsEarned.toLocaleString("en-CA")}
           </p>
         </div>
@@ -172,11 +174,11 @@ function ResultCard({ result, index }: { result: RecommendationResult; index: nu
             onClick={() => setOpen((v) => !v)}
             className="flex w-full items-center justify-between text-left"
           >
-            <span className="text-[12px] font-medium uppercase tracking-widest text-[#A8A8A8]">
+            <span className="text-[12px] font-medium uppercase tracking-widest text-[#A8A8A8] dark:text-[#555555]">
               Category breakdown
             </span>
             <span
-              className={`text-[#A8A8A8] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+              className={`text-[#A8A8A8] transition-transform duration-200 dark:text-[#555555] ${open ? "rotate-180" : ""}`}
               aria-hidden
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -190,17 +192,17 @@ function ResultCard({ result, index }: { result: RecommendationResult; index: nu
               {result.breakdown.map((b) => (
                 <div key={b.category}>
                   <div className="mb-1 flex items-center justify-between">
-                    <span className="text-[12px] text-[#6B6B6B]">
+                    <span className="text-[12px] text-[#6B6B6B] dark:text-[#888888]">
                       {CATEGORY_LABELS[b.category] ?? b.category}
                     </span>
-                    <span className="text-[12px] font-medium text-black">
+                    <span className="text-[12px] font-medium text-black dark:text-[#EDEDED]">
                       {formatCAD(b.valueCAD)}
                     </span>
                   </div>
                   {/* Progress bar */}
-                  <div className="h-1 w-full overflow-hidden rounded-full bg-[#EBEBEB]">
+                  <div className="h-1 w-full overflow-hidden rounded-full bg-[#EBEBEB] dark:bg-[#1F1F1F]">
                     <div
-                      className="h-full rounded-full bg-black transition-all duration-500"
+                      className="h-full rounded-full bg-black transition-all duration-500 dark:bg-[#EDEDED]"
                       style={{ width: `${Math.round((b.valueCAD / maxValue) * 100)}%` }}
                     />
                   </div>
@@ -223,16 +225,16 @@ export default function CardResults({ results, isCalculating = false }: CardResu
     <div className="relative space-y-3">
       {/* Loading overlay */}
       {isCalculating && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-2xl bg-white/85 backdrop-blur-sm">
-          <div className="h-5 w-5 animate-spin rounded-full border-[1.5px] border-[#EBEBEB] border-t-black" />
-          <p className="text-[13px] font-medium text-[#6B6B6B]">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-2xl bg-white/85 backdrop-blur-sm dark:bg-[#0A0A0A]/85">
+          <div className="h-5 w-5 animate-spin rounded-full border-[1.5px] border-[#EBEBEB] border-t-black dark:border-[#1F1F1F] dark:border-t-[#EDEDED]" />
+          <p className="text-[13px] font-medium text-[#6B6B6B] dark:text-[#888888]">
             Optimizing for your spend…
           </p>
         </div>
       )}
 
       <div className={isCalculating ? "pointer-events-none select-none opacity-30" : ""}>
-        <p className="mb-4 text-[11px] font-medium uppercase tracking-widest text-[#A8A8A8]">
+        <p className="mb-4 text-[11px] font-medium uppercase tracking-widest text-[#A8A8A8] dark:text-[#555555]">
           Ranked by net annual value
         </p>
         {results.map((result, i) => (

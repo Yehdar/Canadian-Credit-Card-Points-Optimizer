@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* ── Tailwind v4: class-based dark mode ─────────────────────────────────── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Design tokens ──────────────────────────────────────────────────────── */
 :root {
   --background: #ffffff;
   --surface:    #f7f7f7;
@@ -7,6 +11,15 @@
   --muted:      #6b6b6b;
   --subtle:     #a8a8a8;
   --border:     #ebebeb;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --surface:    #111111;
+  --foreground: #ededed;
+  --muted:      #888888;
+  --subtle:     #555555;
+  --border:     #1f1f1f;
 }
 
 @theme inline {
@@ -41,3 +54,19 @@ input[type="number"] { -moz-appearance: textfield; }
 *, *::before, *::after {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* ── Custom thin scrollbar for dashboard panes ──────────────────────────── */
+.scroll-pane::-webkit-scrollbar              { width: 4px; }
+.scroll-pane::-webkit-scrollbar-track        { background: transparent; }
+.scroll-pane::-webkit-scrollbar-thumb        {
+  background-color: transparent;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+}
+.scroll-pane:hover::-webkit-scrollbar-thumb  { background-color: #cccccc; }
+.dark .scroll-pane:hover::-webkit-scrollbar-thumb { background-color: #333333; }
+
+/* Firefox */
+.scroll-pane       { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.scroll-pane:hover { scrollbar-color: #cccccc transparent; }
+.dark .scroll-pane:hover { scrollbar-color: #333333 transparent; }

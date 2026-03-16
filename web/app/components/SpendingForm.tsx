@@ -5,6 +5,7 @@ import type { SpendingBreakdown } from "@/lib/api";
 
 interface SpendingFormProps {
   onSubmit: (spending: SpendingBreakdown) => void;
+  onSave?: (spending: SpendingBreakdown) => Promise<void>;
   isLoading: boolean;
   initialSpending?: SpendingBreakdown;
   activeProfileName?: string;
@@ -28,6 +29,7 @@ const DEFAULT_SPENDING: SpendingBreakdown = {
 
 export default function SpendingForm({
   onSubmit,
+  onSave,
   isLoading,
   initialSpending,
   activeProfileName,
@@ -35,6 +37,7 @@ export default function SpendingForm({
   const [spending, setSpending] = useState<SpendingBreakdown>(
     initialSpending ?? DEFAULT_SPENDING
   );
+  const [isSaving, setIsSaving] = useState(false);
 
   // Sync form when the active profile changes
   useEffect(() => {
@@ -43,6 +46,16 @@ export default function SpendingForm({
 
   function handleChange(key: keyof SpendingBreakdown, value: string) {
     setSpending((prev) => ({ ...prev, [key]: parseFloat(value) || 0 }));
+  }
+
+  async function handleSave() {
+    if (!onSave) return;
+    setIsSaving(true);
+    try {
+      await onSave(spending);
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -91,13 +104,26 @@ export default function SpendingForm({
         ))}
       </div>
 
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="mt-6 w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {isLoading ? "Calculating..." : "Find Best Cards"}
-      </button>
+      <div className={`mt-6 flex gap-3 ${onSave ? "flex-col sm:flex-row" : ""}`}>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isLoading ? "Calculating..." : "Find Best Cards"}
+        </button>
+
+        {onSave && (
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            {isSaving ? "Saving..." : "Save"}
+          </button>
+        )}
+      </div>
     </form>
   );
 }

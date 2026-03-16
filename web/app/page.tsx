@@ -11,7 +11,7 @@ import { useRecommendations } from "@/hooks/useRecommendations";
 import type { SpendingBreakdown } from "@/lib/api";
 
 export default function Home() {
-  const { activeProfile, profiles } = useProfile();
+  const { activeProfile, profiles, saveActiveProfileSpending } = useProfile();
   const { results, isCalculating, error, calculate, clearResults } = useRecommendations();
 
   /**
@@ -21,10 +21,11 @@ export default function Home() {
   const [lastAnonymousSpending, setLastAnonymousSpending] =
     useState<SpendingBreakdown | null>(null);
 
-  // Auto re-calculate whenever the active profile switches
+  // Auto re-calculate when the active profile switches.
+  // Uses inline spending (not profileId) so the cache keys on the actual values.
   useEffect(() => {
     if (activeProfile) {
-      calculate({ profileId: activeProfile.id, spending: activeProfile.spending });
+      calculate({ spending: activeProfile.spending });
       setLastAnonymousSpending(null);
     } else {
       clearResults();
@@ -32,12 +33,14 @@ export default function Home() {
   }, [activeProfile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSubmit(spending: SpendingBreakdown) {
-    if (activeProfile) {
-      calculate({ profileId: activeProfile.id, spending: activeProfile.spending });
-    } else {
+    // Always send the live form state — never the saved profile snapshot.
+    // This is the fix for stale-state: the form's `spending` arg is the
+    // source of truth, regardless of what the active profile last saved.
+    console.debug("[FindBestCards] submitting spending:", JSON.stringify(spending));
+    if (!activeProfile) {
       setLastAnonymousSpending(spending);
-      calculate({ spending });
     }
+    calculate({ spending });
   }
 
   // Show the save prompt only for anonymous (no active profile) searches
@@ -59,6 +62,7 @@ export default function Home() {
 
         <SpendingForm
           onSubmit={handleSubmit}
+          onSave={activeProfile ? saveActiveProfileSpending : undefined}
           isLoading={isCalculating}
           initialSpending={activeProfile?.spending}
           activeProfileName={activeProfile?.name}

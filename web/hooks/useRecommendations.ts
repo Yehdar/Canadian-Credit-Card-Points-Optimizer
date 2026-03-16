@@ -47,9 +47,16 @@ export function useRecommendations(): UseRecommendationsReturn {
   const lastSpendingRef = useRef<SpendingBreakdown | null>(null);
 
   const calculate = useCallback(async (args: CalculateArgs) => {
-    // Cache hit: skip the round-trip if spending is identical
-    if (lastSpendingRef.current && spendingEqual(lastSpendingRef.current, args.spending)) {
-      return;
+    // Cache hit: skip the round-trip only if spending is byte-for-byte identical.
+    // Always logs in dev so you can verify the payload being evaluated.
+    if (lastSpendingRef.current) {
+      const hit = spendingEqual(lastSpendingRef.current, args.spending);
+      console.debug(
+        "[useRecommendations] cache %s — spending:",
+        hit ? "HIT (skipping fetch)" : "MISS (fetching)",
+        JSON.stringify(args.spending)
+      );
+      if (hit) return;
     }
 
     setIsCalculating(true);
@@ -57,11 +64,14 @@ export function useRecommendations(): UseRecommendationsReturn {
     const t0 = Date.now();
 
     try {
-      const fetchArgs =
+      // For manual submits we always send spending inline so the backend uses
+      // the live form values, not whatever is persisted in the DB.
+      const fetchArgs: Parameters<typeof fetchRecommendations>[0] =
         "profileId" in args
           ? { profileId: args.profileId }
           : { spending: args.spending };
 
+      console.debug("[useRecommendations] → POST /api/recommendations", JSON.stringify(fetchArgs));
       const data = await fetchRecommendations(fetchArgs);
 
       // Enforce minimum loading buffer so the transition is perceptible

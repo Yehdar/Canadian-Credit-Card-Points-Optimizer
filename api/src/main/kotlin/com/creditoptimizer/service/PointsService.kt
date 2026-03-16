@@ -50,15 +50,18 @@ class PointsService {
 
     /** Core calculation — accepts a resolved [SpendingBreakdown] directly. */
     fun calculateRecommendations(spending: SpendingBreakdown): List<RecommendationResult> {
+        // Coerce all inputs to non-negative Doubles. kotlinx.serialization already
+        // deserialises missing JSON fields as 0.0 (DTO defaults), but this guards
+        // against any future call-site passing negative or NaN values.
         val spendMap = mapOf(
-            "groceries"     to spending.groceries,
-            "dining"        to spending.dining,
-            "gas"           to spending.gas,
-            "travel"        to spending.travel,
-            "entertainment" to spending.entertainment,
-            "subscriptions" to spending.subscriptions,
-            "transit"       to spending.transit,
-            "other"         to spending.other
+            "groceries"     to spending.groceries.coerceAtLeast(0.0),
+            "dining"        to spending.dining.coerceAtLeast(0.0),
+            "gas"           to spending.gas.coerceAtLeast(0.0),
+            "travel"        to spending.travel.coerceAtLeast(0.0),
+            "entertainment" to spending.entertainment.coerceAtLeast(0.0),
+            "subscriptions" to spending.subscriptions.coerceAtLeast(0.0),
+            "transit"       to spending.transit.coerceAtLeast(0.0),
+            "other"         to spending.other.coerceAtLeast(0.0)
         )
 
         val cardRows: Map<Int, CardRow> = transaction {

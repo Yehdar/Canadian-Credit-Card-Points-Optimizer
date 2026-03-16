@@ -5,7 +5,7 @@ import type { SpendingBreakdown } from "@/lib/api";
 
 interface SpendingFormProps {
   onSubmit: (spending: SpendingBreakdown) => void;
-  onSaveProfile?: (spending: SpendingBreakdown) => Promise<void>;
+  onSave?: (spending: SpendingBreakdown) => Promise<void>;
   isLoading: boolean;
   initialSpending?: SpendingBreakdown;
   activeProfileName?: string;
@@ -29,7 +29,7 @@ const DEFAULT_SPENDING: SpendingBreakdown = {
 
 export default function SpendingForm({
   onSubmit,
-  onSaveProfile,
+  onSave,
   isLoading,
   initialSpending,
   activeProfileName,
@@ -49,10 +49,10 @@ export default function SpendingForm({
   }
 
   async function handleSave() {
-    if (!onSaveProfile) return;
+    if (!onSave) return;
     setIsSaving(true);
     try {
-      await onSaveProfile(spending);
+      await onSave(spending);
     } finally {
       setIsSaving(false);
     }
@@ -74,16 +74,6 @@ export default function SpendingForm({
               : "Enter your average monthly spend per category to see which Canadian credit card maximizes your rewards."}
           </p>
         </div>
-        {onSaveProfile && (
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="shrink-0 rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-          >
-            {isSaving ? "Saving..." : "Save to Profile"}
-          </button>
-        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -114,13 +104,26 @@ export default function SpendingForm({
         ))}
       </div>
 
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="mt-6 w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {isLoading ? "Calculating..." : "Find Best Cards"}
-      </button>
+      <div className={`mt-6 flex gap-3 ${onSave ? "flex-col sm:flex-row" : ""}`}>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isLoading ? "Calculating..." : "Find Best Cards"}
+        </button>
+
+        {onSave && (
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            {isSaving ? "Saving..." : "Save"}
+          </button>
+        )}
+      </div>
     </form>
   );
 }

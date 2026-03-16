@@ -1,55 +1,50 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import SpendingForm from "@/app/components/SpendingForm";
 import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 import CardResults from "@/app/components/CardResults";
 import HouseholdOptimizer from "@/app/components/HouseholdOptimizer";
-import { fetchRecommendations } from "@/lib/api";
-import type { RecommendationResult, SpendingBreakdown } from "@/lib/api";
+import SaveProfilePrompt from "@/app/components/SaveProfilePrompt";
 import { useProfile } from "@/context/ProfileContext";
+import { useRecommendations } from "@/hooks/useRecommendations";
+import type { SpendingBreakdown } from "@/lib/api";
 
 export default function Home() {
-  const { activeProfile, saveActiveProfileSpending, profiles } = useProfile();
+  const { activeProfile, profiles, saveActiveProfileSpending } = useProfile();
+  const { results, isCalculating, error, calculate, clearResults } = useRecommendations();
 
-  const [results, setResults] = useState<RecommendationResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  /**
+   * Track the spending used for the last successful anonymous search so we can
+   * pass it to SaveProfilePrompt without requiring a saved profile first.
+   */
+  const [lastAnonymousSpending, setLastAnonymousSpending] =
+    useState<SpendingBreakdown | null>(null);
 
-  // Shared fetch logic — used by both the form submit and the auto-refresh effect
-  const runRecommendations = useCallback(
-    async (args: { profileId: number } | { spending: SpendingBreakdown }) => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await fetchRecommendations(args);
-        setResults(data);
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "An unexpected error occurred. Is the backend running?"
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    []
-  );
-
-  // Auto re-fetch whenever the active profile changes
+  // Auto re-calculate when the active profile switches.
+  // Uses inline spending (not profileId) so the cache keys on the actual values.
   useEffect(() => {
     if (activeProfile) {
-      runRecommendations({ profileId: activeProfile.id });
+      calculate({ spending: activeProfile.spending });
+      setLastAnonymousSpending(null);
     } else {
-      setResults([]);
+      clearResults();
     }
   }, [activeProfile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSubmit(spending: SpendingBreakdown) {
-    const args = activeProfile ? { profileId: activeProfile.id } : { spending };
-    runRecommendations(args);
+    // Always send the live form state — never the saved profile snapshot.
+    // This is the fix for stale-state: the form's `spending` arg is the
+    // source of truth, regardless of what the active profile last saved.
+    console.debug("[FindBestCards] submitting spending:", JSON.stringify(spending));
+    if (!activeProfile) {
+      setLastAnonymousSpending(spending);
+    }
+    calculate({ spending });
   }
+
+  // Show the save prompt only for anonymous (no active profile) searches
+  const showSavePrompt = !activeProfile && results.length > 0 && lastAnonymousSpending !== null;
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -67,8 +62,8 @@ export default function Home() {
 
         <SpendingForm
           onSubmit={handleSubmit}
-          onSaveProfile={activeProfile ? saveActiveProfileSpending : undefined}
-          isLoading={isLoading}
+          onSave={activeProfile ? saveActiveProfileSpending : undefined}
+          isLoading={isCalculating}
           initialSpending={activeProfile?.spending}
           activeProfileName={activeProfile?.name}
         />
@@ -79,10 +74,17 @@ export default function Home() {
           </div>
         )}
 
-        {results.length > 0 && (
+        {(results.length > 0 || isCalculating) && (
           <div className="mt-8">
-            <CardResults results={results} />
+            <CardResults results={results} isCalculating={isCalculating} />
           </div>
+        )}
+
+        {showSavePrompt && (
+          <SaveProfilePrompt
+            spending={lastAnonymousSpending!}
+            onSaved={() => setLastAnonymousSpending(null)}
+          />
         )}
 
         {profiles.length >= 2 && (

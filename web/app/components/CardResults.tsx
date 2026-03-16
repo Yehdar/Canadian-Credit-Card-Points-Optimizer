@@ -2,6 +2,7 @@ import type { RecommendationResult } from "@/lib/api";
 
 interface CardResultsProps {
   results: RecommendationResult[];
+  isCalculating?: boolean;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -23,11 +24,22 @@ function formatCAD(value: number): string {
   }).format(value);
 }
 
-export default function CardResults({ results }: CardResultsProps) {
-  if (results.length === 0) return null;
+export default function CardResults({ results, isCalculating = false }: CardResultsProps) {
+  if (results.length === 0 && !isCalculating) return null;
 
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-4">
+      {/* Loading overlay — blurs stale results while new ones are in-flight */}
+      {isCalculating && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white/80 backdrop-blur-sm dark:bg-zinc-950/80">
+          <div className="h-7 w-7 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+            Optimizing for your spend...
+          </p>
+        </div>
+      )}
+
+      <div className={isCalculating ? "pointer-events-none select-none opacity-40" : ""}>
       <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
         Cards Ranked by Annual Net Value
       </h2>
@@ -120,6 +132,7 @@ export default function CardResults({ results }: CardResultsProps) {
           </div>
         );
       })}
+      </div> {/* end blur wrapper */}
     </div>
   );
 }

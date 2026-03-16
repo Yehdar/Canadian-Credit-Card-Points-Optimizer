@@ -5,21 +5,21 @@ import type { SpendingBreakdown } from "@/lib/api";
 
 interface SpendingFormProps {
   onSubmit: (spending: SpendingBreakdown) => void;
-  onSave?: (spending: SpendingBreakdown) => Promise<void>;
+  onSave?:  (spending: SpendingBreakdown) => Promise<void>;
   isLoading: boolean;
   initialSpending?: SpendingBreakdown;
   activeProfileName?: string;
 }
 
 const CATEGORIES: { key: keyof SpendingBreakdown; label: string }[] = [
-  { key: "groceries",     label: "Groceries" },
-  { key: "dining",        label: "Dining & Delivery" },
-  { key: "gas",           label: "Gas" },
-  { key: "travel",        label: "Travel" },
-  { key: "entertainment", label: "Entertainment" },
-  { key: "subscriptions", label: "Subscriptions" },
-  { key: "transit",       label: "Transit" },
-  { key: "other",         label: "Other" },
+  { key: "groceries",     label: "Groceries"      },
+  { key: "dining",        label: "Dining"          },
+  { key: "gas",           label: "Gas"             },
+  { key: "travel",        label: "Travel"          },
+  { key: "entertainment", label: "Entertainment"   },
+  { key: "subscriptions", label: "Subscriptions"   },
+  { key: "transit",       label: "Transit"         },
+  { key: "other",         label: "Other"           },
 ];
 
 const DEFAULT_SPENDING: SpendingBreakdown = {
@@ -34,12 +34,9 @@ export default function SpendingForm({
   initialSpending,
   activeProfileName,
 }: SpendingFormProps) {
-  const [spending, setSpending] = useState<SpendingBreakdown>(
-    initialSpending ?? DEFAULT_SPENDING
-  );
+  const [spending, setSpending] = useState<SpendingBreakdown>(initialSpending ?? DEFAULT_SPENDING);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Sync form when the active profile changes
   useEffect(() => {
     setSpending(initialSpending ?? DEFAULT_SPENDING);
   }, [initialSpending]);
@@ -51,42 +48,44 @@ export default function SpendingForm({
   async function handleSave() {
     if (!onSave) return;
     setIsSaving(true);
-    try {
-      await onSave(spending);
-    } finally {
-      setIsSaving(false);
-    }
+    try { await onSave(spending); }
+    finally { setIsSaving(false); }
   }
 
   return (
     <form
       onSubmit={(e) => { e.preventDefault(); onSubmit(spending); }}
-      className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+      className="rounded-2xl border border-[#EBEBEB] bg-white p-6"
     >
-      <div className="mb-6 flex items-start justify-between gap-4">
+      {/* Form header */}
+      <div className="mb-6 flex items-baseline justify-between gap-4">
         <div>
-          <h2 className="mb-1 text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-            Monthly Spending (CAD)
+          <h2 className="text-[15px] font-semibold tracking-tight text-black">
+            Monthly Spending
           </h2>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-0.5 text-[12px] text-[#A8A8A8]">
             {activeProfileName
-              ? `Editing spending for "${activeProfileName}"`
-              : "Enter your average monthly spend per category to see which Canadian credit card maximizes your rewards."}
+              ? `Editing "${activeProfileName}"`
+              : "Enter your average monthly spend in CAD"}
           </p>
         </div>
+        <span className="text-[11px] font-medium uppercase tracking-widest text-[#A8A8A8]">
+          CAD / mo
+        </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* Category grid */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {CATEGORIES.map(({ key, label }) => (
-          <div key={key}>
+          <div key={key} className="group">
             <label
               htmlFor={key}
-              className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-[#A8A8A8] transition-colors duration-150 group-focus-within:text-black"
             >
               {label}
             </label>
             <div className="relative">
-              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-400">
+              <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[13px] text-[#C0C0C0]">
                 $
               </span>
               <input
@@ -97,20 +96,21 @@ export default function SpendingForm({
                 value={spending[key] || ""}
                 onChange={(e) => handleChange(key, e.target.value)}
                 placeholder="0"
-                className="w-full rounded-lg border border-zinc-300 bg-white py-2 pl-7 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                className="w-full rounded-xl border border-[#EBEBEB] bg-[#FAFAFA] py-3 pl-8 pr-4 text-[14px] text-black placeholder:text-[#D0D0D0] transition-all duration-150 focus:border-black focus:bg-white focus:outline-none"
               />
             </div>
           </div>
         ))}
       </div>
 
-      <div className={`mt-6 flex gap-3 ${onSave ? "flex-col sm:flex-row" : ""}`}>
+      {/* Action row */}
+      <div className={`mt-6 flex gap-3 ${onSave ? "sm:flex-row flex-col" : ""}`}>
         <button
           type="submit"
           disabled={isLoading}
-          className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex-1 rounded-full bg-black py-3 text-[13px] font-semibold text-white transition-all duration-150 active:scale-[0.98] hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {isLoading ? "Calculating..." : "Find Best Cards"}
+          {isLoading ? "Calculating…" : "Find Best Cards"}
         </button>
 
         {onSave && (
@@ -118,9 +118,9 @@ export default function SpendingForm({
             type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="rounded-full border border-[#EBEBEB] px-6 py-3 text-[13px] font-medium text-black transition-all duration-150 active:scale-[0.98] hover:border-black disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {isSaving ? "Saving..." : "Save"}
+            {isSaving ? "Saving…" : "Save"}
           </button>
         )}
       </div>

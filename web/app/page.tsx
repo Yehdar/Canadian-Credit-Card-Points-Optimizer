@@ -47,17 +47,8 @@ export default function Home() {
   const showSavePrompt = !activeProfile && results.length > 0 && lastAnonymousSpending !== null;
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <div className="mx-auto max-w-3xl px-4 py-12">
-        <header className="mb-8 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Canadian Credit Card Points Optimizer
-          </h1>
-          <p className="mt-2 text-zinc-500 dark:text-zinc-400">
-            Enter your monthly spending to find the best Canadian credit card for your lifestyle.
-          </p>
-        </header>
-
+    <div className="min-h-screen bg-[#F7F7F7]">
+      <div className="mx-auto max-w-3xl px-6 py-10">
         <ProfileSwitcher />
 
         <SpendingForm
@@ -69,7 +60,7 @@ export default function Home() {
         />
 
         {error && (
-          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
+          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
             {error}
           </div>
         )}

@@ -48,10 +48,10 @@ export default function Home() {
       Mobile  : single column, standard page scroll
       Desktop : fixed-height split pane — left fixed, right scrolls independently
     */
-    <div className="flex flex-col bg-[#F7F7F7] dark:bg-[#0A0A0A] lg:h-[calc(100vh-3.5rem)] lg:flex-row lg:overflow-hidden">
+    <div className="flex flex-col bg-[#F8F9FA] dark:bg-[#202124] lg:h-[calc(100vh-3.5rem)] lg:flex-row lg:overflow-hidden">
 
       {/* ── Left pane — inputs ─────────────────────────────────────────── */}
-      <aside className="scroll-pane shrink-0 border-b border-[#EBEBEB] px-6 py-8 dark:border-[#1F1F1F] lg:w-2/5 lg:overflow-y-auto lg:border-b-0 lg:border-r">
+      <aside className="scroll-pane shrink-0 border-b border-[#DADCE0] bg-white px-6 py-8 dark:border-[#3C4043] dark:bg-[#292A2D] lg:w-2/5 lg:overflow-y-auto lg:border-b-0 lg:border-r">
         <ProfileSwitcher />
 
         <SpendingForm
@@ -89,9 +89,9 @@ export default function Home() {
         ) : (
           /* Empty state — only rendered at lg+ where the pane has fixed height */
           <div className="hidden h-full flex-col items-center justify-center lg:flex">
-            <p className="text-[13px] text-[#A8A8A8] dark:text-[#555555]">
+            <p className="text-[13px] text-[#9AA0A6] dark:text-[#5F6368]">
               Enter your monthly spending and click{" "}
-              <span className="font-medium text-black dark:text-[#EDEDED]">Find Best Cards</span>.
+              <span className="font-medium text-black dark:text-[#E8EAED]">Find Best Cards</span>.
             </p>
           </div>
         )}

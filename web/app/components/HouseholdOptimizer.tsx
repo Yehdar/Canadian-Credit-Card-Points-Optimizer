@@ -52,19 +52,19 @@ export default function HouseholdOptimizer({ profiles }: HouseholdOptimizerProps
   const canOptimize = selectedIds.size >= 2;
 
   return (
-    <div className="rounded-2xl border border-[#EBEBEB] bg-white p-6 dark:border-[#1F1F1F] dark:bg-[#111111]">
+    <div className="rounded-2xl border border-[#DADCE0] bg-white p-6 dark:border-[#3C4043] dark:bg-[#292A2D]">
       {/* Header */}
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-[15px] font-semibold tracking-tight text-black dark:text-[#EDEDED]">
+          <h2 className="text-[15px] font-semibold tracking-tight text-black dark:text-[#E8EAED]">
             Household Optimizer
           </h2>
-          <p className="mt-0.5 text-[12px] text-[#A8A8A8] dark:text-[#555555]">
+          <p className="mt-0.5 text-[12px] text-[#9AA0A6] dark:text-[#5F6368]">
             Select 2–4 profiles to find the best card strategy for your household.
           </p>
         </div>
         {result?.isDualCardStrategy && (
-          <span className="shrink-0 rounded-full border border-[#EBEBEB] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-black dark:border-[#1F1F1F] dark:text-[#EDEDED]">
+          <span className="shrink-0 rounded-full border border-[#DADCE0] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-black dark:border-[#3C4043] dark:text-[#E8EAED]">
             Dual-Card
           </span>
         )}
@@ -80,8 +80,8 @@ export default function HouseholdOptimizer({ profiles }: HouseholdOptimizerProps
               onClick={() => toggleProfile(profile.id)}
               className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-medium transition-all duration-200 ${
                 selected
-                  ? "bg-black text-white dark:bg-[#EDEDED] dark:text-[#0A0A0A]"
-                  : "border border-[#EBEBEB] text-[#6B6B6B] hover:border-black hover:text-black dark:border-[#1F1F1F] dark:text-[#888888] dark:hover:border-[#EDEDED] dark:hover:text-[#EDEDED]"
+                  ? "bg-black text-white dark:bg-[#E8EAED] dark:text-[#202124]"
+                  : "border border-[#DADCE0] text-[#5F6368] hover:border-black hover:text-black dark:border-[#3C4043] dark:text-[#9AA0A6] dark:hover:border-[#E8EAED] dark:hover:text-[#E8EAED]"
               }`}
             >
               {profile.name}
@@ -99,12 +99,12 @@ export default function HouseholdOptimizer({ profiles }: HouseholdOptimizerProps
         <button
           onClick={handleOptimize}
           disabled={!canOptimize || isLoading}
-          className="rounded-full bg-black px-6 py-2.5 text-[13px] font-semibold text-white transition-all duration-150 active:scale-[0.98] hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-[#EDEDED] dark:text-[#0A0A0A]"
+          className="rounded-full bg-black px-6 py-2.5 text-[13px] font-semibold text-white transition-all duration-150 active:scale-[0.98] hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-[#E8EAED] dark:text-[#202124]"
         >
           {isLoading ? "Optimizing…" : "Find Best Combo"}
         </button>
         {!canOptimize && (
-          <p className="text-[12px] text-[#A8A8A8] dark:text-[#555555]">Select at least 2 profiles.</p>
+          <p className="text-[12px] text-[#9AA0A6] dark:text-[#5F6368]">Select at least 2 profiles.</p>
         )}
       </div>
 
@@ -119,7 +119,7 @@ export default function HouseholdOptimizer({ profiles }: HouseholdOptimizerProps
       {result && (
         <div className="mt-6 space-y-4">
           {/* Insight banner */}
-          <div className="rounded-xl border border-[#EBEBEB] bg-[#F7F7F7] px-4 py-3 text-[13px] text-black dark:border-[#1F1F1F] dark:bg-[#0A0A0A] dark:text-[#EDEDED]">
+          <div className="rounded-xl border border-[#DADCE0] bg-[#F1F3F4] px-4 py-3 text-[13px] text-black dark:border-[#3C4043] dark:bg-[#202124] dark:text-[#E8EAED]">
             {result.insight}
           </div>
 
@@ -128,44 +128,44 @@ export default function HouseholdOptimizer({ profiles }: HouseholdOptimizerProps
             {result.assignments.map(({ profile, bestCard, breakdown, netAnnualValue }) => (
               <div
                 key={profile.id}
-                className="rounded-xl border border-[#EBEBEB] bg-[#F7F7F7] p-4 dark:border-[#1F1F1F] dark:bg-[#0A0A0A]"
+                className="rounded-xl border border-[#DADCE0] bg-[#F1F3F4] p-4 dark:border-[#3C4043] dark:bg-[#202124]"
               >
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="text-[13px] font-semibold text-black dark:text-[#EDEDED]">
+                  <span className="text-[13px] font-semibold text-black dark:text-[#E8EAED]">
                     {profile.name}
                   </span>
-                  <span className="rounded-full border border-[#EBEBEB] px-2 py-0.5 text-[10px] font-medium uppercase tracking-widest text-[#A8A8A8] dark:border-[#1F1F1F] dark:text-[#555555]">
+                  <span className="rounded-full border border-[#DADCE0] px-2 py-0.5 text-[10px] font-medium uppercase tracking-widest text-[#9AA0A6] dark:border-[#3C4043] dark:text-[#5F6368]">
                     {profile.profileType}
                   </span>
                 </div>
 
-                <p className="text-[14px] font-semibold text-black dark:text-[#EDEDED]">
+                <p className="text-[14px] font-semibold text-black dark:text-[#E8EAED]">
                   {bestCard.name}
                 </p>
-                <p className="mt-0.5 text-[12px] text-[#6B6B6B] dark:text-[#888888]">
+                <p className="mt-0.5 text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
                   {bestCard.issuer} · {bestCard.pointsCurrency}
                 </p>
 
                 <div className="mt-3 space-y-1">
                   {breakdown.slice(0, 4).map((row) => (
                     <div key={row.category} className="flex justify-between text-[12px]">
-                      <span className="capitalize text-[#6B6B6B] dark:text-[#888888]">{row.category}</span>
-                      <span className="font-medium text-black dark:text-[#EDEDED]">+{formatCAD(row.valueCAD)}</span>
+                      <span className="capitalize text-[#5F6368] dark:text-[#9AA0A6]">{row.category}</span>
+                      <span className="font-medium text-black dark:text-[#E8EAED]">+{formatCAD(row.valueCAD)}</span>
                     </div>
                   ))}
                   {breakdown.length > 4 && (
-                    <p className="text-[12px] text-[#A8A8A8] dark:text-[#555555]">
+                    <p className="text-[12px] text-[#9AA0A6] dark:text-[#5F6368]">
                       +{breakdown.length - 4} more categories
                     </p>
                   )}
                 </div>
 
-                <div className="mt-3 flex items-center justify-between border-t border-[#EBEBEB] pt-3 dark:border-[#1F1F1F]">
-                  <span className="text-[12px] text-[#A8A8A8] dark:text-[#555555]">Net / year</span>
+                <div className="mt-3 flex items-center justify-between border-t border-[#DADCE0] pt-3 dark:border-[#3C4043]">
+                  <span className="text-[12px] text-[#9AA0A6] dark:text-[#5F6368]">Net / year</span>
                   <span className={`text-[13px] font-bold ${
                     netAnnualValue >= 0
-                      ? "text-black dark:text-[#EDEDED]"
-                      : "text-[#6B6B6B] dark:text-[#555555]"
+                      ? "text-black dark:text-[#E8EAED]"
+                      : "text-[#5F6368] dark:text-[#5F6368]"
                   }`}>
                     {netAnnualValue >= 0 ? "+" : ""}{formatCAD(netAnnualValue)}
                   </span>
@@ -175,11 +175,11 @@ export default function HouseholdOptimizer({ profiles }: HouseholdOptimizerProps
           </div>
 
           {/* Combined total */}
-          <div className="flex items-center justify-between rounded-xl border border-[#EBEBEB] bg-white px-5 py-4 dark:border-[#1F1F1F] dark:bg-[#111111]">
-            <span className="text-[13px] font-medium text-[#6B6B6B] dark:text-[#888888]">
+          <div className="flex items-center justify-between rounded-xl border border-[#DADCE0] bg-white px-5 py-4 dark:border-[#3C4043] dark:bg-[#292A2D]">
+            <span className="text-[13px] font-medium text-[#5F6368] dark:text-[#9AA0A6]">
               Combined household annual value
             </span>
-            <span className="text-[17px] font-bold text-black dark:text-[#EDEDED]">
+            <span className="text-[17px] font-bold text-black dark:text-[#E8EAED]">
               +{formatCAD(result.combinedNetAnnualValue)}
             </span>
           </div>

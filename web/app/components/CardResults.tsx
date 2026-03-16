@@ -96,10 +96,10 @@ function ResultCard({ result, index }: { result: RecommendationResult; index: nu
 
   return (
     <div
-      className={`group rounded-2xl bg-white p-6 transition-all duration-200 dark:bg-[#111111] ${
+      className={`group rounded-2xl bg-white p-6 transition-all duration-200 dark:bg-[#292A2D] ${
         isBest
-          ? "border border-black dark:border-[#EDEDED]"
-          : "border border-[#EBEBEB] hover:border-[#C8C8C8] dark:border-[#1F1F1F] dark:hover:border-[#333333]"
+          ? "border border-black dark:border-[#E8EAED]"
+          : "border border-[#DADCE0] hover:border-[#BDC1C6] dark:border-[#3C4043] dark:hover:border-[#5F6368]"
       }`}
     >
       {/* Header row */}
@@ -107,28 +107,28 @@ function ResultCard({ result, index }: { result: RecommendationResult; index: nu
         <div className="flex-1 min-w-0">
           {/* Rank + badge */}
           <div className="mb-2 flex items-center gap-2">
-            <span className="text-[11px] font-medium uppercase tracking-widest text-[#A8A8A8] dark:text-[#555555]">
+            <span className="text-[11px] font-medium uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">
               #{index + 1}
             </span>
             {isBest && (
-              <span className="rounded-full bg-black px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-white dark:bg-[#EDEDED] dark:text-[#0A0A0A]">
+              <span className="rounded-full bg-black px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-white dark:bg-[#E8EAED] dark:text-[#202124]">
                 Best Match
               </span>
             )}
           </div>
 
           {/* Card name */}
-          <h3 className="text-[17px] font-semibold leading-tight tracking-tight text-black dark:text-[#EDEDED]">
+          <h3 className="text-[17px] font-semibold leading-tight tracking-tight text-black dark:text-[#E8EAED]">
             {result.card.name}
           </h3>
 
           {/* Meta row */}
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="text-[12px] text-[#6B6B6B] dark:text-[#888888]">{result.card.issuer}</span>
-            <span className="text-[#EBEBEB] dark:text-[#1F1F1F]">·</span>
-            <span className="text-[12px] text-[#6B6B6B] dark:text-[#888888]">{result.card.pointsCurrency}</span>
-            <span className="text-[#EBEBEB] dark:text-[#1F1F1F]">·</span>
-            <span className="text-[12px] text-[#6B6B6B] dark:text-[#888888]">{formatCAD(result.card.annualFee)}/yr</span>
+            <span className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">{result.card.issuer}</span>
+            <span className="text-[#DADCE0] dark:text-[#3C4043]">·</span>
+            <span className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">{result.card.pointsCurrency}</span>
+            <span className="text-[#DADCE0] dark:text-[#3C4043]">·</span>
+            <span className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">{formatCAD(result.card.annualFee)}/yr</span>
             <span className="ml-1">{NETWORK_MARKS[result.card.cardType]}</span>
           </div>
         </div>
@@ -137,30 +137,30 @@ function ResultCard({ result, index }: { result: RecommendationResult; index: nu
         <div className="shrink-0 text-right">
           <p className={`text-[28px] font-bold leading-none tracking-tight ${
             isPositive
-              ? "text-black dark:text-[#EDEDED]"
-              : "text-[#6B6B6B] dark:text-[#555555]"
+              ? "text-black dark:text-[#E8EAED]"
+              : "text-[#5F6368] dark:text-[#5F6368]"
           }`}>
             {isPositive ? "+" : ""}{formatCAD(result.netAnnualValue)}
           </p>
-          <p className="mt-1 text-[11px] uppercase tracking-widest text-[#A8A8A8] dark:text-[#555555]">net / year</p>
+          <p className="mt-1 text-[11px] uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">net / year</p>
         </div>
       </div>
 
       {/* Stats strip */}
-      <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#EBEBEB] bg-[#EBEBEB] dark:border-[#1F1F1F] dark:bg-[#1F1F1F]">
-        <div className="bg-[#F7F7F7] px-4 py-3 dark:bg-[#0A0A0A]">
-          <p className="text-[11px] font-medium uppercase tracking-widest text-[#A8A8A8] dark:text-[#555555]">
+      <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#DADCE0] bg-[#DADCE0] dark:border-[#3C4043] dark:bg-[#3C4043]">
+        <div className="bg-[#F1F3F4] px-4 py-3 dark:bg-[#202124]">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">
             Rewards value
           </p>
-          <p className="mt-0.5 text-[15px] font-semibold text-black dark:text-[#EDEDED]">
+          <p className="mt-0.5 text-[15px] font-semibold text-black dark:text-[#E8EAED]">
             {formatCAD(result.totalValueCAD)}
           </p>
         </div>
-        <div className="bg-[#F7F7F7] px-4 py-3 dark:bg-[#0A0A0A]">
-          <p className="text-[11px] font-medium uppercase tracking-widest text-[#A8A8A8] dark:text-[#555555]">
+        <div className="bg-[#F1F3F4] px-4 py-3 dark:bg-[#202124]">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">
             Points earned
           </p>
-          <p className="mt-0.5 text-[15px] font-semibold text-black dark:text-[#EDEDED]">
+          <p className="mt-0.5 text-[15px] font-semibold text-black dark:text-[#E8EAED]">
             {result.totalPointsEarned.toLocaleString("en-CA")}
           </p>
         </div>
@@ -174,11 +174,11 @@ function ResultCard({ result, index }: { result: RecommendationResult; index: nu
             onClick={() => setOpen((v) => !v)}
             className="flex w-full items-center justify-between text-left"
           >
-            <span className="text-[12px] font-medium uppercase tracking-widest text-[#A8A8A8] dark:text-[#555555]">
+            <span className="text-[12px] font-medium uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">
               Category breakdown
             </span>
             <span
-              className={`text-[#A8A8A8] transition-transform duration-200 dark:text-[#555555] ${open ? "rotate-180" : ""}`}
+              className={`text-[#9AA0A6] transition-transform duration-200 dark:text-[#5F6368] ${open ? "rotate-180" : ""}`}
               aria-hidden
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -192,17 +192,17 @@ function ResultCard({ result, index }: { result: RecommendationResult; index: nu
               {result.breakdown.map((b) => (
                 <div key={b.category}>
                   <div className="mb-1 flex items-center justify-between">
-                    <span className="text-[12px] text-[#6B6B6B] dark:text-[#888888]">
+                    <span className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
                       {CATEGORY_LABELS[b.category] ?? b.category}
                     </span>
-                    <span className="text-[12px] font-medium text-black dark:text-[#EDEDED]">
+                    <span className="text-[12px] font-medium text-black dark:text-[#E8EAED]">
                       {formatCAD(b.valueCAD)}
                     </span>
                   </div>
                   {/* Progress bar */}
-                  <div className="h-1 w-full overflow-hidden rounded-full bg-[#EBEBEB] dark:bg-[#1F1F1F]">
+                  <div className="h-1 w-full overflow-hidden rounded-full bg-[#DADCE0] dark:bg-[#3C4043]">
                     <div
-                      className="h-full rounded-full bg-black transition-all duration-500 dark:bg-[#EDEDED]"
+                      className="h-full rounded-full bg-black transition-all duration-500 dark:bg-[#E8EAED]"
                       style={{ width: `${Math.round((b.valueCAD / maxValue) * 100)}%` }}
                     />
                   </div>
@@ -225,16 +225,16 @@ export default function CardResults({ results, isCalculating = false }: CardResu
     <div className="relative space-y-3">
       {/* Loading overlay */}
       {isCalculating && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-2xl bg-white/85 backdrop-blur-sm dark:bg-[#0A0A0A]/85">
-          <div className="h-5 w-5 animate-spin rounded-full border-[1.5px] border-[#EBEBEB] border-t-black dark:border-[#1F1F1F] dark:border-t-[#EDEDED]" />
-          <p className="text-[13px] font-medium text-[#6B6B6B] dark:text-[#888888]">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-2xl bg-white/85 backdrop-blur-sm dark:bg-[#202124]/85">
+          <div className="h-5 w-5 animate-spin rounded-full border-[1.5px] border-[#DADCE0] border-t-black dark:border-[#3C4043] dark:border-t-[#E8EAED]" />
+          <p className="text-[13px] font-medium text-[#5F6368] dark:text-[#9AA0A6]">
             Optimizing for your spend…
           </p>
         </div>
       )}
 
       <div className={isCalculating ? "pointer-events-none select-none opacity-30" : ""}>
-        <p className="mb-4 text-[11px] font-medium uppercase tracking-widest text-[#A8A8A8] dark:text-[#555555]">
+        <p className="mb-4 text-[11px] font-medium uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">
           Ranked by net annual value
         </p>
         {results.map((result, i) => (

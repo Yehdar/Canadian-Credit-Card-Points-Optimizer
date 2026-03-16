@@ -5,26 +5,27 @@
 
 /* ── Design tokens ──────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --surface:    #f7f7f7;
-  --foreground: #000000;
-  --muted:      #6b6b6b;
-  --subtle:     #a8a8a8;
-  --border:     #ebebeb;
+  --background: #F8F9FA;   /* Soft Paper */
+  --surface:    #FFFFFF;   /* Cards pop against the bg */
+  --foreground: #202124;   /* Google dark text */
+  --muted:      #5F6368;   /* Secondary text */
+  --subtle:     #9AA0A6;   /* Placeholder / hint */
+  --border:     #DADCE0;   /* Light border */
 }
 
 .dark {
-  --background: #0a0a0a;
-  --surface:    #111111;
-  --foreground: #ededed;
-  --muted:      #888888;
-  --subtle:     #555555;
-  --border:     #1f1f1f;
+  --background: #202124;   /* Incognito bg */
+  --surface:    #292A2D;   /* Elevated surface */
+  --foreground: #E8EAED;   /* Primary text */
+  --muted:      #9AA0A6;   /* Secondary text */
+  --subtle:     #5F6368;   /* Subtle hint */
+  --border:     #3C4043;   /* Dark border */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-black: #202124;  /* Override Tailwind "black" → Google dark text */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -63,10 +64,10 @@ input[type="number"] { -moz-appearance: textfield; }
   border-radius: 9999px;
   transition: background-color 0.2s;
 }
-.scroll-pane:hover::-webkit-scrollbar-thumb  { background-color: #cccccc; }
-.dark .scroll-pane:hover::-webkit-scrollbar-thumb { background-color: #333333; }
+.scroll-pane:hover::-webkit-scrollbar-thumb  { background-color: #BDC1C6; }
+.dark .scroll-pane:hover::-webkit-scrollbar-thumb { background-color: #5F6368; }
 
 /* Firefox */
 .scroll-pane       { scrollbar-width: thin; scrollbar-color: transparent transparent; }
-.scroll-pane:hover { scrollbar-color: #cccccc transparent; }
-.dark .scroll-pane:hover { scrollbar-color: #333333 transparent; }
+.scroll-pane:hover { scrollbar-color: #BDC1C6 transparent; }
+.dark .scroll-pane:hover { scrollbar-color: #5F6368 transparent; }

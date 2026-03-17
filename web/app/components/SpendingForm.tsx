@@ -36,6 +36,8 @@ interface SpendingFormProps {
 const DEFAULT_SPENDING: SpendingBreakdown = {
   groceries: 0, dining: 0, gas: 0, travel: 0,
   entertainment: 0, subscriptions: 0, transit: 0, other: 0,
+  pharmacy: 0, onlineShopping: 0, homeImprovement: 0,
+  canadianTirePartners: 0, foreignPurchases: 0,
 };
 
 const DEFAULT_FILTERS: FormFilters = {
@@ -55,20 +57,24 @@ const DEFAULT_FILTERS: FormFilters = {
 };
 
 /**
- * Maps the 8-field SpendingBreakdown (API shape) to the category keys used
- * by SpendingModule. Foreign / pharmacy / online / home / ctPartners have no
- * reverse mapping, so they default to 0 on pre-fill.
+ * Maps the 13-field SpendingBreakdown (API shape) to the category keys used
+ * by SpendingModule. All fields now have a direct 1-to-1 mapping.
  */
 function toModuleInitialValues(s: SpendingBreakdown): Record<string, number> {
   return {
-    food:      s.dining,
-    grocery:   s.groceries,
-    recurring: s.subscriptions,
-    gas:       s.gas,
-    transport: s.transit,
-    entertain: s.entertainment,
-    travel:    s.travel,
-    other:     s.other,
+    food:       s.dining,
+    grocery:    s.groceries,
+    recurring:  s.subscriptions,
+    gas:        s.gas,
+    transport:  s.transit,
+    entertain:  s.entertainment,
+    travel:     s.travel,
+    other:      s.other,
+    foreign:    s.foreignPurchases,
+    pharmacy:   s.pharmacy,
+    online:     s.onlineShopping,
+    home:       s.homeImprovement,
+    ctPartners: s.canadianTirePartners,
   };
 }
 

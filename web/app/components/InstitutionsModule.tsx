@@ -11,21 +11,24 @@ interface InstitutionItem {
   label: string;
 }
 
+// IDs must exactly match the `issuer` column values in the credit_cards table
+// (see V2__seed_cards.sql). The backend does a direct string comparison.
 const BIG_FIVE: InstitutionItem[] = [
-  { id: "td",         label: "TD"         },
-  { id: "rbc",        label: "RBC"        },
-  { id: "bmo",        label: "BMO"        },
-  { id: "scotiabank", label: "Scotiabank" },
-  { id: "cibc",       label: "CIBC"       },
+  { id: "TD",                 label: "TD"         },
+  { id: "RBC",                label: "RBC"        },
+  { id: "BMO",                label: "BMO"        },
+  { id: "Scotiabank",         label: "Scotiabank" },
+  { id: "CIBC",               label: "CIBC"       },
 ];
 
 const FINTECHS: InstitutionItem[] = [
-  { id: "wealthsimple", label: "Wealthsimple" },
-  { id: "neo",          label: "Neo Financial" },
-  { id: "tangerine",    label: "Tangerine"     },
-  { id: "simplii",      label: "Simplii"       },
-  { id: "pcfinancial",  label: "PC Financial"  },
-  { id: "eqbank",       label: "EQ Bank"       },
+  { id: "Wealthsimple",       label: "Wealthsimple" },
+  { id: "Neo Financial",      label: "Neo Financial" },
+  { id: "Tangerine",          label: "Tangerine"     },
+  { id: "Simplii",            label: "Simplii"       },
+  { id: "PC Financial",       label: "PC Financial"  },
+  { id: "EQ Bank",            label: "EQ Bank"       },
+  { id: "Rogers",             label: "Rogers"        },
 ];
 
 const ALL_INSTITUTIONS = [...BIG_FIVE, ...FINTECHS];

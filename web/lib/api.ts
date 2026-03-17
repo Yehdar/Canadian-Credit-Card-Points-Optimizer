@@ -27,6 +27,7 @@ export interface RecommendationResult {
 }
 
 export interface SpendingBreakdown {
+  // Original 8 categories
   groceries: number;
   dining: number;
   gas: number;
@@ -35,6 +36,12 @@ export interface SpendingBreakdown {
   subscriptions: number;
   transit: number;
   other: number;
+  // Expanded in V4
+  pharmacy: number;
+  onlineShopping: number;
+  homeImprovement: number;
+  canadianTirePartners: number;
+  foreignPurchases: number;
 }
 
 export type RewardType    = "cashback" | "points" | "both";

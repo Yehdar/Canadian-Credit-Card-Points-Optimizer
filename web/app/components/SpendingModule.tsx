@@ -36,19 +36,19 @@ interface CategoryConfig {
 /* module-level JSX which triggers React dev-mode warnings.                  */
 
 const CATEGORIES: CategoryConfig[] = [
-  { key: "food",       label: "Food",                  sublabel: "Restaurants, bars, delivery",         Icon: Utensils,     mapsTo: "dining"         },
-  { key: "grocery",    label: "Grocery",               sublabel: "Supermarkets, warehouse stores",       Icon: ShoppingCart, mapsTo: "groceries"      },
-  { key: "recurring",  label: "Recurring",             sublabel: "Streaming, software, memberships",    Icon: RefreshCw,    mapsTo: "subscriptions"  },
-  { key: "gas",        label: "Gas",                   sublabel: "Fuel stations",                        Icon: Fuel,         mapsTo: "gas"            },
-  { key: "transport",  label: "Transportation",        sublabel: "Taxis, rideshare, parking",            Icon: Bus,          mapsTo: "transit"        },
-  { key: "entertain",  label: "Entertainment",         sublabel: "Events, movies, concerts",             Icon: Tv,           mapsTo: "entertainment"  },
-  { key: "foreign",    label: "Foreign",               sublabel: "Non-CAD purchases abroad",             Icon: Globe,        mapsTo: "other"          },
-  { key: "travel",     label: "Travel",                sublabel: "Flights, hotels, car rentals",         Icon: Plane,        mapsTo: "travel"         },
-  { key: "pharmacy",   label: "Pharmacy",              sublabel: "Drugstores, medical supplies",         Icon: Pill,         mapsTo: "other"          },
-  { key: "online",     label: "Online Shopping",       sublabel: "E-commerce, Amazon, eBay",             Icon: Package,      mapsTo: "other"          },
-  { key: "home",       label: "Home Improvement",      sublabel: "Hardware, furniture, appliances",      Icon: Hammer,       mapsTo: "other"          },
-  { key: "ctPartners", label: "Canadian Tire Partners",sublabel: "CT, Sport Chek, Mark's, Gas+",         Icon: Wrench,       mapsTo: "other"          },
-  { key: "other",      label: "Other",                 sublabel: "Everything else",                      Icon: Tag,          mapsTo: "other"          },
+  { key: "food",       label: "Food",                  sublabel: "Restaurants, bars, delivery",         Icon: Utensils,     mapsTo: "dining"                },
+  { key: "grocery",    label: "Grocery",               sublabel: "Supermarkets, warehouse stores",       Icon: ShoppingCart, mapsTo: "groceries"             },
+  { key: "recurring",  label: "Recurring",             sublabel: "Streaming, software, memberships",    Icon: RefreshCw,    mapsTo: "subscriptions"         },
+  { key: "gas",        label: "Gas",                   sublabel: "Fuel stations",                        Icon: Fuel,         mapsTo: "gas"                   },
+  { key: "transport",  label: "Transportation",        sublabel: "Taxis, rideshare, parking",            Icon: Bus,          mapsTo: "transit"               },
+  { key: "entertain",  label: "Entertainment",         sublabel: "Events, movies, concerts",             Icon: Tv,           mapsTo: "entertainment"         },
+  { key: "foreign",    label: "Foreign",               sublabel: "Non-CAD purchases abroad",             Icon: Globe,        mapsTo: "foreignPurchases"      },
+  { key: "travel",     label: "Travel",                sublabel: "Flights, hotels, car rentals",         Icon: Plane,        mapsTo: "travel"                },
+  { key: "pharmacy",   label: "Pharmacy",              sublabel: "Drugstores, medical supplies",         Icon: Pill,         mapsTo: "pharmacy"              },
+  { key: "online",     label: "Online Shopping",       sublabel: "E-commerce, Amazon, eBay",             Icon: Package,      mapsTo: "onlineShopping"        },
+  { key: "home",       label: "Home Improvement",      sublabel: "Hardware, furniture, appliances",      Icon: Hammer,       mapsTo: "homeImprovement"       },
+  { key: "ctPartners", label: "Canadian Tire Partners",sublabel: "CT, Sport Chek, Mark's, Gas+",         Icon: Wrench,       mapsTo: "canadianTirePartners"  },
+  { key: "other",      label: "Other",                 sublabel: "Everything else",                      Icon: Tag,          mapsTo: "other"                 },
 ];
 
 type CategoryValues = Record<string, { value: number; period: Period }>;
@@ -61,6 +61,8 @@ function normalizeToSpending(values: CategoryValues): SpendingBreakdown {
   const result: SpendingBreakdown = {
     groceries: 0, dining: 0, gas: 0, travel: 0,
     entertainment: 0, subscriptions: 0, transit: 0, other: 0,
+    pharmacy: 0, onlineShopping: 0, homeImprovement: 0,
+    canadianTirePartners: 0, foreignPurchases: 0,
   };
   CATEGORIES.forEach(({ key, mapsTo }) => {
     const entry = values[key];

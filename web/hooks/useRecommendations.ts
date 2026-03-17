@@ -7,17 +7,22 @@ import type { FormFilters, RecommendationResult, SpendingBreakdown } from "@/lib
 /** Minimum perceived-loading duration in milliseconds. */
 const MIN_LOADING_MS = 800;
 
-/** O(n) deep equality over the fixed SpendingBreakdown shape. */
+/** O(n) deep equality over all 13 SpendingBreakdown fields. */
 function spendingEqual(a: SpendingBreakdown, b: SpendingBreakdown): boolean {
   return (
-    a.groceries     === b.groceries     &&
-    a.dining        === b.dining        &&
-    a.gas           === b.gas           &&
-    a.travel        === b.travel        &&
-    a.entertainment === b.entertainment &&
-    a.subscriptions === b.subscriptions &&
-    a.transit       === b.transit       &&
-    a.other         === b.other
+    a.groceries            === b.groceries            &&
+    a.dining               === b.dining               &&
+    a.gas                  === b.gas                  &&
+    a.travel               === b.travel               &&
+    a.entertainment        === b.entertainment        &&
+    a.subscriptions        === b.subscriptions        &&
+    a.transit              === b.transit              &&
+    a.other                === b.other                &&
+    a.pharmacy             === b.pharmacy             &&
+    a.onlineShopping       === b.onlineShopping       &&
+    a.homeImprovement      === b.homeImprovement      &&
+    a.canadianTirePartners === b.canadianTirePartners &&
+    a.foreignPurchases     === b.foreignPurchases
   );
 }
 

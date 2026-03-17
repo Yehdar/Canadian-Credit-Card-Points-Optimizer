@@ -13,6 +13,8 @@ const PROFILE_TYPES: { value: ProfileType; label: string }[] = [
 const DEFAULT_SPENDING: SpendingBreakdown = {
   groceries: 0, dining: 0, gas: 0, travel: 0,
   entertainment: 0, subscriptions: 0, transit: 0, other: 0,
+  pharmacy: 0, onlineShopping: 0, homeImprovement: 0,
+  canadianTirePartners: 0, foreignPurchases: 0,
 };
 
 export default function ProfileSwitcher() {

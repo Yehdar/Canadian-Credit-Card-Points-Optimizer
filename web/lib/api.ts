@@ -37,6 +37,31 @@ export interface SpendingBreakdown {
   other: number;
 }
 
+export type RewardType    = "cashback" | "points" | "both";
+export type FeePreference = "no_fee" | "include_fee";
+export type CardNetwork   = "visa" | "mastercard" | "amex";
+
+export interface FormFilters {
+  rewardType:          RewardType;
+  feePreference:       FeePreference;
+  rogersOwner:         boolean;
+  amazonPrime:         boolean;
+  institutions:        string[];
+  networks:            CardNetwork[];
+  benefits: {
+    noForeignFee:        boolean;
+    airportLounge:       boolean;
+    loungeVisitsPerYear: number;
+    priorityTravel:      boolean;
+    freeCheckedBag:      boolean;
+  };
+}
+
+export interface SpendingFormSubmission {
+  spending: SpendingBreakdown;
+  filters:  FormFilters;
+}
+
 export interface Profile {
   id: number;
   name: string;
@@ -128,7 +153,10 @@ export async function fetchCards(): Promise<CardSummary[]> {
 }
 
 export async function fetchRecommendations(
-  args: { profileId: number } | { spending: SpendingBreakdown }
+  args: (
+    | { profileId: number }
+    | { spending: SpendingBreakdown }
+  ) & { filters?: FormFilters }
 ): Promise<RecommendationResult[]> {
   const res = await fetch(`${API_BASE}/api/recommendations`, {
     method: "POST",

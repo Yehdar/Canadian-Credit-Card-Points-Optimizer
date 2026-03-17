@@ -51,7 +51,7 @@ export default function Home() {
     <div className="flex flex-col bg-[#F8F9FA] dark:bg-[#202124] lg:h-[calc(100vh-3.5rem)] lg:flex-row lg:overflow-hidden">
 
       {/* ── Left pane — inputs ─────────────────────────────────────────── */}
-      <aside className="scroll-pane shrink-0 border-b border-[#DADCE0] bg-white px-6 py-8 dark:border-[#3C4043] dark:bg-[#292A2D] lg:w-2/5 lg:overflow-y-auto lg:border-b-0 lg:border-r">
+      <aside className="scroll-pane shrink-0 border-b border-[#DADCE0] bg-[#F8F9FA] px-6 py-8 dark:border-[#3C4043] dark:bg-[#202124] lg:w-2/5 lg:overflow-y-auto lg:border-b-0 lg:border-r">
         <ProfileSwitcher />
 
         <SpendingForm

@@ -121,38 +121,6 @@ export async function deleteProfile(id: number): Promise<void> {
   if (!res.ok) throw new Error(`Failed to delete profile: ${res.status}`);
 }
 
-export interface ProfileSummaryDto {
-  id: number;
-  name: string;
-  profileType: ProfileType;
-}
-
-export interface ProfileOptimization {
-  profile: ProfileSummaryDto;
-  bestCard: CardSummary;
-  breakdown: CategoryBreakdown[];
-  netAnnualValue: number;
-}
-
-export interface HouseholdOptimizationResult {
-  assignments: ProfileOptimization[];
-  combinedNetAnnualValue: number;
-  isDualCardStrategy: boolean;
-  insight: string;
-}
-
-export async function fetchHouseholdOptimization(
-  profileIds: number[]
-): Promise<HouseholdOptimizationResult> {
-  const res = await fetch(`${API_BASE}/api/optimize`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ profileIds }),
-  });
-  if (!res.ok) throw new Error(`Failed to optimize household: ${res.status}`);
-  return res.json();
-}
-
 export async function fetchCards(): Promise<CardSummary[]> {
   const res = await fetch(`${API_BASE}/api/cards`);
   if (!res.ok) throw new Error(`Failed to fetch cards: ${res.status}`);

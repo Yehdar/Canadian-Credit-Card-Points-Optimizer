@@ -4,14 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import SpendingForm from "@/app/components/SpendingForm";
 import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 import CardResults from "@/app/components/CardResults";
-import HouseholdOptimizer from "@/app/components/HouseholdOptimizer";
 import SaveProfilePrompt from "@/app/components/SaveProfilePrompt";
 import { useProfile } from "@/context/ProfileContext";
 import { useRecommendations } from "@/hooks/useRecommendations";
 import type { SpendingBreakdown, SpendingFormSubmission } from "@/lib/api";
 
 export default function Home() {
-  const { activeProfile, profiles, saveActiveProfileSpending } = useProfile();
+  const { activeProfile, saveActiveProfileSpending } = useProfile();
   const { results, isCalculating, error, calculate, clearResults } = useRecommendations();
 
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -79,10 +78,6 @@ export default function Home() {
                 spending={lastAnonymousSpending!}
                 onSaved={() => setLastAnonymousSpending(null)}
               />
-            )}
-
-            {profiles.length >= 2 && (
-              <HouseholdOptimizer profiles={profiles} />
             )}
           </div>
         ) : (

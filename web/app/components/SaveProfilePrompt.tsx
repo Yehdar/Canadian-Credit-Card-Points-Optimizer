@@ -4,26 +4,25 @@ import { useState } from "react";
 import { useProfile } from "@/context/ProfileContext";
 import type { ProfileType, SpendingBreakdown } from "@/lib/api";
 
-const PROFILE_TYPES: { value: ProfileType; label: string; emoji: string }[] = [
-  { value: "personal", label: "Personal",  emoji: "👤" },
-  { value: "business", label: "Business",  emoji: "💼" },
-  { value: "partner",  label: "Partner",   emoji: "👥" },
+const PROFILE_TYPES: { value: ProfileType; label: string }[] = [
+  { value: "personal", label: "Personal" },
+  { value: "business", label: "Business" },
+  { value: "partner",  label: "Partner"  },
 ];
 
 interface SaveProfilePromptProps {
   spending: SpendingBreakdown;
-  /** Called after a successful save so the parent can react (e.g. clear the prompt). */
   onSaved?: () => void;
 }
 
 export default function SaveProfilePrompt({ spending, onSaved }: SaveProfilePromptProps) {
   const { createProfile } = useProfile();
 
-  const [name, setName]       = useState("");
-  const [type, setType]       = useState<ProfileType>("personal");
+  const [name, setName]         = useState("");
+  const [type, setType]         = useState<ProfileType>("personal");
   const [isSaving, setIsSaving] = useState(false);
-  const [saved, setSaved]     = useState(false);
-  const [error, setError]     = useState<string | null>(null);
+  const [saved, setSaved]       = useState(false);
+  const [error, setError]       = useState<string | null>(null);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -43,25 +42,27 @@ export default function SaveProfilePrompt({ spending, onSaved }: SaveProfileProm
 
   if (saved) {
     return (
-      <div className="mt-6 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
-        <span>✓</span>
-        <span>Profile saved! Switch to it anytime from the profile bar above.</span>
+      <div className="flex items-center gap-2 rounded-xl border border-[#DADCE0] bg-[#F1F3F4] px-4 py-3 text-[13px] text-black dark:border-[#3C4043] dark:bg-[#292A2D] dark:text-[#E8EAED]">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0">
+          <path d="M2.5 7l3 3 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <span>Profile saved — switch to it anytime from the profile bar.</span>
       </div>
     );
   }
 
   return (
-    <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <h3 className="mb-1 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+    <div className="rounded-2xl border border-[#DADCE0] bg-white p-6 dark:border-[#3C4043] dark:bg-[#292A2D]">
+      <h3 className="text-[15px] font-semibold tracking-tight text-black dark:text-[#E8EAED]">
         Save this spending profile
       </h3>
-      <p className="mb-4 text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="mt-0.5 text-[12px] text-[#9AA0A6] dark:text-[#5F6368]">
         Store these numbers for future comparisons and household optimization.
       </p>
 
-      <form onSubmit={handleSave} className="flex flex-wrap items-end gap-3">
+      <form onSubmit={handleSave} className="mt-4 flex flex-wrap items-end gap-3">
         <div className="min-w-[180px] flex-1">
-          <label className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">
             Profile name
           </label>
           <input
@@ -71,22 +72,22 @@ export default function SaveProfilePrompt({ spending, onSaved }: SaveProfileProm
             placeholder="e.g. My Household"
             maxLength={100}
             required
-            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+            className="w-full rounded-xl border border-[#DADCE0] bg-[#F8F9FA] px-4 py-2.5 text-[13px] text-black placeholder:text-[#BDC1C6] transition-colors duration-150 focus:border-black focus:bg-white focus:outline-none dark:border-[#3C4043] dark:bg-[#202124] dark:text-[#E8EAED] dark:placeholder:text-[#5F6368] dark:focus:border-[#E8EAED] dark:focus:bg-[#292A2D]"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">
             Type
           </label>
           <div className="flex gap-1.5">
-            {PROFILE_TYPES.map(({ value, label, emoji }) => (
+            {PROFILE_TYPES.map(({ value, label }) => (
               <label
                 key={value}
-                className={`flex cursor-pointer items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                className={`flex cursor-pointer items-center rounded-full px-3.5 py-2 text-[12px] font-medium transition-all duration-200 ${
                   type === value
-                    ? "bg-blue-600 text-white"
-                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                    ? "bg-black text-white dark:bg-[#E8EAED] dark:text-[#202124]"
+                    : "border border-[#DADCE0] text-[#5F6368] hover:border-black hover:text-black dark:border-[#3C4043] dark:text-[#9AA0A6] dark:hover:border-[#E8EAED] dark:hover:text-[#E8EAED]"
                 }`}
               >
                 <input
@@ -97,7 +98,7 @@ export default function SaveProfilePrompt({ spending, onSaved }: SaveProfileProm
                   onChange={() => setType(value)}
                   className="sr-only"
                 />
-                {emoji} {label}
+                {label}
               </label>
             ))}
           </div>
@@ -106,14 +107,14 @@ export default function SaveProfilePrompt({ spending, onSaved }: SaveProfileProm
         <button
           type="submit"
           disabled={isSaving || !name.trim()}
-          className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-full bg-black px-6 py-2.5 text-[13px] font-semibold text-white transition-all duration-150 active:scale-[0.97] hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-[#E8EAED] dark:text-[#202124]"
         >
-          {isSaving ? "Saving..." : "Save Profile"}
+          {isSaving ? "Saving…" : "Save Profile"}
         </button>
       </form>
 
       {error && (
-        <p className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</p>
+        <p className="mt-3 text-[12px] text-red-600 dark:text-red-400">{error}</p>
       )}
     </div>
   );

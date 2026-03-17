@@ -1,26 +1,73 @@
 @import "tailwindcss";
 
+/* ── Tailwind v4: class-based dark mode ─────────────────────────────────── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Design tokens ──────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F8F9FA;   /* Soft Paper */
+  --surface:    #FFFFFF;   /* Cards pop against the bg */
+  --foreground: #202124;   /* Google dark text */
+  --muted:      #5F6368;   /* Secondary text */
+  --subtle:     #9AA0A6;   /* Placeholder / hint */
+  --border:     #DADCE0;   /* Light border */
+}
+
+.dark {
+  --background: #202124;   /* Incognito bg */
+  --surface:    #292A2D;   /* Elevated surface */
+  --foreground: #E8EAED;   /* Primary text */
+  --muted:      #9AA0A6;   /* Secondary text */
+  --subtle:     #5F6368;   /* Subtle hint */
+  --border:     #3C4043;   /* Dark border */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-black: #202124;  /* Override Tailwind "black" → Google dark text */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
 }
+
+/* Remove default number input spinners — cleaner fintech look */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+input[type="number"] { -moz-appearance: textfield; }
+
+/* Smooth cubic-bezier for all transitions */
+*, *::before, *::after {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Custom thin scrollbar for dashboard panes ──────────────────────────── */
+.scroll-pane::-webkit-scrollbar              { width: 4px; }
+.scroll-pane::-webkit-scrollbar-track        { background: transparent; }
+.scroll-pane::-webkit-scrollbar-thumb        {
+  background-color: transparent;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+}
+.scroll-pane:hover::-webkit-scrollbar-thumb  { background-color: #BDC1C6; }
+.dark .scroll-pane:hover::-webkit-scrollbar-thumb { background-color: #5F6368; }
+
+/* Firefox */
+.scroll-pane       { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.scroll-pane:hover { scrollbar-color: #BDC1C6 transparent; }
+.dark .scroll-pane:hover { scrollbar-color: #5F6368 transparent; }

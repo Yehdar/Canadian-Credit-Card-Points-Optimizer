@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { RecommendationResult } from "@/lib/api";
 
 interface CardResultsProps {
@@ -5,9 +8,67 @@ interface CardResultsProps {
   isCalculating?: boolean;
 }
 
+/* ── Network mark SVGs (monochromatic) ─────────────────────────────────── */
+
+function VisaMark() {
+  return (
+    <svg viewBox="0 0 48 16" className="h-4 w-auto" aria-label="Visa">
+      <text
+        x="0" y="13"
+        fontFamily="Arial, sans-serif"
+        fontWeight="bold"
+        fontStyle="italic"
+        fontSize="16"
+        fill="#1A1A6E"
+        letterSpacing="-0.5"
+      >
+        VISA
+      </text>
+    </svg>
+  );
+}
+
+function MastercardMark() {
+  return (
+    <svg viewBox="0 0 38 24" className="h-5 w-auto" aria-label="Mastercard">
+      <circle cx="14" cy="12" r="10" fill="#EB001B" />
+      <circle cx="24" cy="12" r="10" fill="#F79E1B" />
+      <path
+        d="M19 5.5a10 10 0 0 1 0 13A10 10 0 0 1 19 5.5z"
+        fill="#FF5F00"
+      />
+    </svg>
+  );
+}
+
+function AmexMark() {
+  return (
+    <svg viewBox="0 0 48 16" className="h-4 w-auto" aria-label="Amex">
+      <text
+        x="0" y="13"
+        fontFamily="Arial, sans-serif"
+        fontWeight="bold"
+        fontSize="13"
+        fill="#007BC1"
+        letterSpacing="1.5"
+      >
+        AMEX
+      </text>
+    </svg>
+  );
+}
+
+const NETWORK_MARKS: Record<string, React.ReactNode> = {
+  visa:       <VisaMark />,
+  mastercard: <MastercardMark />,
+  amex:       <AmexMark />,
+};
+
+/* ── Helpers ────────────────────────────────────────────────────────────── */
+
 const CATEGORY_LABELS: Record<string, string> = {
   groceries:     "Groceries",
-  dining:        "Dining & Delivery",
+  dining:        "Dining",
   gas:           "Gas",
   travel:        "Travel",
   entertainment: "Entertainment",
@@ -21,118 +82,167 @@ function formatCAD(value: number): string {
     style: "currency",
     currency: "CAD",
     minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(value);
 }
+
+/* ── Single card ────────────────────────────────────────────────────────── */
+
+function ResultCard({ result, index }: { result: RecommendationResult; index: number }) {
+  const [open, setOpen] = useState(index === 0);
+  const isPositive = result.netAnnualValue >= 0;
+  const isBest     = index === 0;
+  const maxValue   = Math.max(...result.breakdown.map((b) => b.valueCAD), 0.01);
+
+  return (
+    <div
+      className={`group rounded-2xl bg-white p-6 transition-all duration-200 dark:bg-[#292A2D] ${
+        isBest
+          ? "border border-black dark:border-[#E8EAED]"
+          : "border border-[#DADCE0] hover:border-[#BDC1C6] dark:border-[#3C4043] dark:hover:border-[#5F6368]"
+      }`}
+    >
+      {/* Header row */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          {/* Rank + badge */}
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-[11px] font-medium uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">
+              #{index + 1}
+            </span>
+            {isBest && (
+              <span className="rounded-full bg-black px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-white dark:bg-[#E8EAED] dark:text-[#202124]">
+                Best Match
+              </span>
+            )}
+          </div>
+
+          {/* Card name */}
+          <h3 className="text-[17px] font-semibold leading-tight tracking-tight text-black dark:text-[#E8EAED]">
+            {result.card.name}
+          </h3>
+
+          {/* Meta row */}
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">{result.card.issuer}</span>
+            <span className="text-[#DADCE0] dark:text-[#3C4043]">·</span>
+            <span className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">{result.card.pointsCurrency}</span>
+            <span className="text-[#DADCE0] dark:text-[#3C4043]">·</span>
+            <span className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">{formatCAD(result.card.annualFee)}/yr</span>
+            <span className="ml-1">{NETWORK_MARKS[result.card.cardType]}</span>
+          </div>
+        </div>
+
+        {/* Hero stat */}
+        <div className="shrink-0 text-right">
+          <p className={`text-[28px] font-bold leading-none tracking-tight ${
+            isPositive
+              ? "text-black dark:text-[#E8EAED]"
+              : "text-[#5F6368] dark:text-[#5F6368]"
+          }`}>
+            {isPositive ? "+" : ""}{formatCAD(result.netAnnualValue)}
+          </p>
+          <p className="mt-1 text-[11px] uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">net / year</p>
+        </div>
+      </div>
+
+      {/* Stats strip */}
+      <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#DADCE0] bg-[#DADCE0] dark:border-[#3C4043] dark:bg-[#3C4043]">
+        <div className="bg-[#F1F3F4] px-4 py-3 dark:bg-[#202124]">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">
+            Rewards value
+          </p>
+          <p className="mt-0.5 text-[15px] font-semibold text-black dark:text-[#E8EAED]">
+            {formatCAD(result.totalValueCAD)}
+          </p>
+        </div>
+        <div className="bg-[#F1F3F4] px-4 py-3 dark:bg-[#202124]">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">
+            Points earned
+          </p>
+          <p className="mt-0.5 text-[15px] font-semibold text-black dark:text-[#E8EAED]">
+            {result.totalPointsEarned.toLocaleString("en-CA")}
+          </p>
+        </div>
+      </div>
+
+      {/* Category breakdown (progress bars) */}
+      {result.breakdown.length > 0 && (
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <span className="text-[12px] font-medium uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">
+              Category breakdown
+            </span>
+            <span
+              className={`text-[#9AA0A6] transition-transform duration-200 dark:text-[#5F6368] ${open ? "rotate-180" : ""}`}
+              aria-hidden
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
+          </button>
+
+          {open && (
+            <div className="mt-3 space-y-2.5">
+              {result.breakdown.map((b) => (
+                <div key={b.category}>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
+                      {CATEGORY_LABELS[b.category] ?? b.category}
+                    </span>
+                    <span className="text-[12px] font-medium text-black dark:text-[#E8EAED]">
+                      {formatCAD(b.valueCAD)}
+                    </span>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="h-1 w-full overflow-hidden rounded-full bg-[#DADCE0] dark:bg-[#3C4043]">
+                    <div
+                      className="h-full rounded-full bg-black transition-all duration-500 dark:bg-[#E8EAED]"
+                      style={{ width: `${Math.round((b.valueCAD / maxValue) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── List ───────────────────────────────────────────────────────────────── */
 
 export default function CardResults({ results, isCalculating = false }: CardResultsProps) {
   if (results.length === 0 && !isCalculating) return null;
 
   return (
-    <div className="relative space-y-4">
-      {/* Loading overlay — blurs stale results while new ones are in-flight */}
+    <div className="relative space-y-3">
+      {/* Loading overlay */}
       {isCalculating && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white/80 backdrop-blur-sm dark:bg-zinc-950/80">
-          <div className="h-7 w-7 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-            Optimizing for your spend...
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-2xl bg-white/85 backdrop-blur-sm dark:bg-[#202124]/85">
+          <div className="h-5 w-5 animate-spin rounded-full border-[1.5px] border-[#DADCE0] border-t-black dark:border-[#3C4043] dark:border-t-[#E8EAED]" />
+          <p className="text-[13px] font-medium text-[#5F6368] dark:text-[#9AA0A6]">
+            Optimizing for your spend…
           </p>
         </div>
       )}
 
-      <div className={isCalculating ? "pointer-events-none select-none opacity-40" : ""}>
-      <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-        Cards Ranked by Annual Net Value
-      </h2>
-
-      {results.map((result, index) => {
-        const isPositive = result.netAnnualValue >= 0;
-
-        return (
-          <div
-            key={result.card.id}
-            className={`rounded-2xl border bg-white p-5 shadow-sm dark:bg-zinc-900 ${
-              index === 0
-                ? "border-blue-400 ring-1 ring-blue-400 dark:border-blue-500"
-                : "border-zinc-200 dark:border-zinc-800"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  {index === 0 && (
-                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                      Best Match
-                    </span>
-                  )}
-                  <span className="text-xs text-zinc-400">#{index + 1}</span>
-                </div>
-                <h3 className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-50">
-                  {result.card.name}
-                </h3>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {result.card.issuer} &middot; {result.card.pointsCurrency} &middot;{" "}
-                  {formatCAD(result.card.annualFee)}/yr
-                </p>
-              </div>
-
-              <div className="text-right">
-                <p className={`text-lg font-bold ${isPositive ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>
-                  {isPositive ? "+" : ""}{formatCAD(result.netAnnualValue)}
-                </p>
-                <p className="text-xs text-zinc-400">net annual value</p>
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800">
-              <div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">Rewards Value</p>
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                  {formatCAD(result.totalValueCAD)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">Points Earned</p>
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                  {result.totalPointsEarned.toLocaleString("en-CA")}
-                </p>
-              </div>
-            </div>
-
-            {result.breakdown.length > 0 && (
-              <details className="mt-3">
-                <summary className="cursor-pointer text-sm text-blue-600 hover:underline dark:text-blue-400">
-                  View category breakdown
-                </summary>
-                <table className="mt-3 w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-zinc-400">
-                      <th className="pb-1 font-medium">Category</th>
-                      <th className="pb-1 text-right font-medium">Annual Spend</th>
-                      <th className="pb-1 text-right font-medium">Value</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                    {result.breakdown.map((b) => (
-                      <tr key={b.category}>
-                        <td className="py-1.5 text-zinc-700 dark:text-zinc-300">
-                          {CATEGORY_LABELS[b.category] ?? b.category}
-                        </td>
-                        <td className="py-1.5 text-right text-zinc-500">
-                          {formatCAD(b.spent)}
-                        </td>
-                        <td className="py-1.5 text-right font-medium text-zinc-900 dark:text-zinc-100">
-                          {formatCAD(b.valueCAD)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </details>
-            )}
+      <div className={isCalculating ? "pointer-events-none select-none opacity-30" : ""}>
+        <p className="mb-4 text-[11px] font-medium uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">
+          Ranked by net annual value
+        </p>
+        {results.map((result, i) => (
+          <div key={result.card.id} className={i > 0 ? "mt-3" : ""}>
+            <ResultCard result={result} index={i} />
           </div>
-        );
-      })}
-      </div> {/* end blur wrapper */}
+        ))}
+      </div>
     </div>
   );
 }

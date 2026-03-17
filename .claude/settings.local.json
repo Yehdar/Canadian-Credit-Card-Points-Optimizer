@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la tailwind.config.*)",
+      "Bash(ls -la /c/Users/Stuart/Desktop/local/claude/web/*.config.*)"
+    ]
+  }
+}

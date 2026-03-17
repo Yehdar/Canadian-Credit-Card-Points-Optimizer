@@ -80,7 +80,8 @@ data class CardSummary(
     val issuer:         String,
     val annualFee:      Double,
     val pointsCurrency: String,
-    val cardType:       String
+    val cardType:       String,
+    val isPointsBased:  Boolean  // TRUE = points currency; FALSE = cash-back / store-credit
 )
 
 @Serializable

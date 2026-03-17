@@ -9,6 +9,7 @@ export interface CardSummary {
   annualFee: number;
   pointsCurrency: string;
   cardType: string;
+  isPointsBased: boolean;  // true = points; false = cash-back / store-credit
 }
 
 export interface CategoryBreakdown {

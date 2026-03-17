@@ -23,6 +23,10 @@ object CreditCards : Table("credit_cards") {
     val rogersBonusMultiplier = decimal("rogers_bonus_multiplier", 4, 2)
     val amazonPrimeMultiplier = decimal("amazon_prime_multiplier", 4, 2)
 
+    // Metadata (added in V6)
+    val issuerIconUrl  = varchar("issuer_icon_url", 255).nullable()
+    val isPointsBased  = bool("is_points_based")
+
     override val primaryKey = PrimaryKey(id)
 }
 

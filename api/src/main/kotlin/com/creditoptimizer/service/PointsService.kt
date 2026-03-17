@@ -20,7 +20,8 @@ class PointsService {
                 issuer         = row[CreditCards.issuer],
                 annualFee      = row[CreditCards.annualFeeCad].toDouble(),
                 pointsCurrency = row[CreditCards.pointsCurrency],
-                cardType       = row[CreditCards.cardType]
+                cardType       = row[CreditCards.cardType],
+                isPointsBased  = row[CreditCards.isPointsBased]
             )
         }
     }
@@ -87,6 +88,7 @@ class PointsService {
                     pointsCurrency        = row[CreditCards.pointsCurrency],
                     cpp                   = row[CreditCards.cpp].toDouble(),
                     cardType              = row[CreditCards.cardType],
+                    isPointsBased         = row[CreditCards.isPointsBased],
                     noForeignFee          = row[CreditCards.noForeignFee],
                     airportLounge         = row[CreditCards.airportLounge],
                     priorityTravel        = row[CreditCards.priorityTravel],
@@ -149,7 +151,7 @@ class PointsService {
 
             val totalValue = breakdown.sumOf { it.valueCAD }
             RecommendationResult(
-                card              = CardSummary(card.id, card.name, card.issuer, card.annualFeeCad, card.pointsCurrency, card.cardType),
+                card              = CardSummary(card.id, card.name, card.issuer, card.annualFeeCad, card.pointsCurrency, card.cardType, card.isPointsBased),
                 breakdown         = breakdown,
                 totalPointsEarned = round2(breakdown.sumOf { it.pointsEarned }),
                 totalValueCAD     = round2(totalValue),
@@ -199,6 +201,7 @@ class PointsService {
         val pointsCurrency:        String,
         val cpp:                   Double,
         val cardType:              String,
+        val isPointsBased:         Boolean,
         val noForeignFee:          Boolean,
         val airportLounge:         Boolean,
         val priorityTravel:        Boolean,

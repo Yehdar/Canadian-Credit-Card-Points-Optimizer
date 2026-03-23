@@ -146,6 +146,20 @@ function ResultCard({ result, index }: { result: RecommendationResult; index: nu
         </div>
       </div>
 
+      {/* Eligibility warning */}
+      {result.eligibilityWarning && (
+        <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800/50 dark:bg-amber-950/30">
+          <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" viewBox="0 0 16 16" fill="none" aria-hidden>
+            <path d="M8 1.5L14.5 13H1.5L8 1.5Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round"/>
+            <path d="M8 6v3.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+            <circle cx="8" cy="11.5" r="0.625" fill="currentColor"/>
+          </svg>
+          <p className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-400">
+            {result.eligibilityWarning}
+          </p>
+        </div>
+      )}
+
       {/* Stats strip */}
       <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#DADCE0] bg-[#DADCE0] dark:border-[#3C4043] dark:bg-[#3C4043]">
         <div className="bg-[#F1F3F4] px-4 py-3 dark:bg-[#202124]">

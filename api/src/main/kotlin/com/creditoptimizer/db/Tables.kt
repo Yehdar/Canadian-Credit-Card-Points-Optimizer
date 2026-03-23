@@ -5,13 +5,32 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.javatime.timestamp
 
 object CreditCards : Table("credit_cards") {
-    val id             = integer("id").autoIncrement()
-    val name           = varchar("name", 100)
-    val issuer         = varchar("issuer", 100)
-    val annualFeeCad   = decimal("annual_fee_cad", 8, 2)
-    val pointsCurrency = varchar("points_currency", 50)
-    val cpp            = decimal("cpp", 6, 4)
-    val cardType       = varchar("card_type", 20)
+    val id                    = integer("id").autoIncrement()
+    val name                  = varchar("name", 100)
+    val issuer                = varchar("issuer", 100)
+    val annualFeeCad          = decimal("annual_fee_cad", 8, 2)
+    val pointsCurrency        = varchar("points_currency", 50)
+    val cpp                   = decimal("cpp", 6, 4)
+    val cardType              = varchar("card_type", 20)
+
+    // Benefit flags (added in V5)
+    val noForeignFee          = bool("no_foreign_fee")
+    val airportLounge         = bool("airport_lounge")
+    val priorityTravel        = bool("priority_travel")
+    val freeCheckedBag        = bool("free_checked_bag")
+
+    // Earn-rate multipliers applied when the matching user flag is set (added in V5)
+    val rogersBonusMultiplier = decimal("rogers_bonus_multiplier", 4, 2)
+    val amazonPrimeMultiplier = decimal("amazon_prime_multiplier", 4, 2)
+
+    // Metadata (added in V6)
+    val issuerIconUrl  = varchar("issuer_icon_url", 255).nullable()
+    val isPointsBased  = bool("is_points_based")
+
+    // Eligibility thresholds (added in V7); NULL means no minimum enforced
+    val minIncomePersonal  = integer("min_income_personal").nullable()
+    val minIncomeHousehold = integer("min_income_household").nullable()
+    val minCreditScore     = integer("min_credit_score").nullable()
 
     override val primaryKey = PrimaryKey(id)
 }
@@ -30,7 +49,7 @@ object SpendingProfiles : IntIdTable("spending_profiles") {
     val name          = varchar("name", 100)
     val profileType   = varchar("profile_type", 20)   // 'personal' | 'business' | 'partner'
 
-    // Monthly CAD spend per category
+    // Original 8 monthly-CAD spend categories
     val groceries     = decimal("groceries",     10, 2)
     val dining        = decimal("dining",        10, 2)
     val gas           = decimal("gas",           10, 2)
@@ -39,6 +58,18 @@ object SpendingProfiles : IntIdTable("spending_profiles") {
     val subscriptions = decimal("subscriptions", 10, 2)
     val transit       = decimal("transit",       10, 2)
     val other         = decimal("other",         10, 2)
+
+    // 5 expanded categories (added in V4)
+    val pharmacy               = decimal("pharmacy",               10, 2)
+    val onlineShopping         = decimal("online_shopping",        10, 2)
+    val homeImprovement        = decimal("home_improvement",       10, 2)
+    val canadianTirePartners   = decimal("canadian_tire_partners", 10, 2)
+    val foreignPurchases       = decimal("foreign_purchases",      10, 2)
+
+    // Eligibility inputs (added in V7); NULL means user did not provide
+    val annualIncome          = integer("annual_income").nullable()
+    val householdIncome       = integer("household_income").nullable()
+    val estimatedCreditScore  = integer("estimated_credit_score").nullable()
 
     val createdAt     = timestamp("created_at")
     val updatedAt     = timestamp("updated_at")

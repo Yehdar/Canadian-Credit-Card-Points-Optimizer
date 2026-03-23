@@ -34,16 +34,21 @@ class ProfileService {
 
         return transaction {
             val insertedId = SpendingProfiles.insertAndGetId {
-                it[name]          = request.name.trim()
-                it[profileType]   = request.profileType
-                it[groceries]     = request.spending.groceries.toBigDecimal()
-                it[dining]        = request.spending.dining.toBigDecimal()
-                it[gas]           = request.spending.gas.toBigDecimal()
-                it[travel]        = request.spending.travel.toBigDecimal()
-                it[entertainment] = request.spending.entertainment.toBigDecimal()
-                it[subscriptions] = request.spending.subscriptions.toBigDecimal()
-                it[transit]       = request.spending.transit.toBigDecimal()
-                it[other]         = request.spending.other.toBigDecimal()
+                it[name]                  = request.name.trim()
+                it[profileType]           = request.profileType
+                it[groceries]             = request.spending.groceries.toBigDecimal()
+                it[dining]                = request.spending.dining.toBigDecimal()
+                it[gas]                   = request.spending.gas.toBigDecimal()
+                it[travel]                = request.spending.travel.toBigDecimal()
+                it[entertainment]         = request.spending.entertainment.toBigDecimal()
+                it[subscriptions]         = request.spending.subscriptions.toBigDecimal()
+                it[transit]               = request.spending.transit.toBigDecimal()
+                it[other]                 = request.spending.other.toBigDecimal()
+                it[pharmacy]              = request.spending.pharmacy.toBigDecimal()
+                it[onlineShopping]        = request.spending.onlineShopping.toBigDecimal()
+                it[homeImprovement]       = request.spending.homeImprovement.toBigDecimal()
+                it[canadianTirePartners]  = request.spending.canadianTirePartners.toBigDecimal()
+                it[foreignPurchases]      = request.spending.foreignPurchases.toBigDecimal()
                 // created_at / updated_at default via DB trigger
             }
 
@@ -67,16 +72,21 @@ class ProfileService {
         val merged = request.spending ?: currentSpending
 
         SpendingProfiles.update({ SpendingProfiles.id eq id }) {
-            it[name]          = request.name?.trim() ?: existing[name]
-            it[profileType]   = request.profileType  ?: existing[profileType]
-            it[groceries]     = merged.groceries.toBigDecimal()
-            it[dining]        = merged.dining.toBigDecimal()
-            it[gas]           = merged.gas.toBigDecimal()
-            it[travel]        = merged.travel.toBigDecimal()
-            it[entertainment] = merged.entertainment.toBigDecimal()
-            it[subscriptions] = merged.subscriptions.toBigDecimal()
-            it[transit]       = merged.transit.toBigDecimal()
-            it[other]         = merged.other.toBigDecimal()
+            it[name]                  = request.name?.trim() ?: existing[name]
+            it[profileType]           = request.profileType  ?: existing[profileType]
+            it[groceries]             = merged.groceries.toBigDecimal()
+            it[dining]                = merged.dining.toBigDecimal()
+            it[gas]                   = merged.gas.toBigDecimal()
+            it[travel]                = merged.travel.toBigDecimal()
+            it[entertainment]         = merged.entertainment.toBigDecimal()
+            it[subscriptions]         = merged.subscriptions.toBigDecimal()
+            it[transit]               = merged.transit.toBigDecimal()
+            it[other]                 = merged.other.toBigDecimal()
+            it[pharmacy]              = merged.pharmacy.toBigDecimal()
+            it[onlineShopping]        = merged.onlineShopping.toBigDecimal()
+            it[homeImprovement]       = merged.homeImprovement.toBigDecimal()
+            it[canadianTirePartners]  = merged.canadianTirePartners.toBigDecimal()
+            it[foreignPurchases]      = merged.foreignPurchases.toBigDecimal()
             // updated_at is handled by the DB trigger in V3 migration
         }
 
@@ -95,14 +105,19 @@ class ProfileService {
     // -----------------------------------------------------------------------
 
     private fun ResultRow.toSpendingBreakdown() = SpendingBreakdown(
-        groceries     = this[SpendingProfiles.groceries].toDouble(),
-        dining        = this[SpendingProfiles.dining].toDouble(),
-        gas           = this[SpendingProfiles.gas].toDouble(),
-        travel        = this[SpendingProfiles.travel].toDouble(),
-        entertainment = this[SpendingProfiles.entertainment].toDouble(),
-        subscriptions = this[SpendingProfiles.subscriptions].toDouble(),
-        transit       = this[SpendingProfiles.transit].toDouble(),
-        other         = this[SpendingProfiles.other].toDouble()
+        groceries            = this[SpendingProfiles.groceries].toDouble(),
+        dining               = this[SpendingProfiles.dining].toDouble(),
+        gas                  = this[SpendingProfiles.gas].toDouble(),
+        travel               = this[SpendingProfiles.travel].toDouble(),
+        entertainment        = this[SpendingProfiles.entertainment].toDouble(),
+        subscriptions        = this[SpendingProfiles.subscriptions].toDouble(),
+        transit              = this[SpendingProfiles.transit].toDouble(),
+        other                = this[SpendingProfiles.other].toDouble(),
+        pharmacy             = this[SpendingProfiles.pharmacy].toDouble(),
+        onlineShopping       = this[SpendingProfiles.onlineShopping].toDouble(),
+        homeImprovement      = this[SpendingProfiles.homeImprovement].toDouble(),
+        canadianTirePartners = this[SpendingProfiles.canadianTirePartners].toDouble(),
+        foreignPurchases     = this[SpendingProfiles.foreignPurchases].toDouble()
     )
 
     private fun ResultRow.toResponse() = ProfileResponse(

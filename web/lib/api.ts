@@ -9,6 +9,7 @@ export interface CardSummary {
   annualFee: number;
   pointsCurrency: string;
   cardType: string;
+  isPointsBased: boolean;  // true = points; false = cash-back / store-credit
 }
 
 export interface CategoryBreakdown {
@@ -24,9 +25,12 @@ export interface RecommendationResult {
   totalPointsEarned: number;
   totalValueCAD: number;
   netAnnualValue: number;
+  /** Present when the user's credit score is within the soft buffer of the card's minimum. */
+  eligibilityWarning?: string;
 }
 
 export interface SpendingBreakdown {
+  // Original 8 categories
   groceries: number;
   dining: number;
   gas: number;
@@ -35,6 +39,40 @@ export interface SpendingBreakdown {
   subscriptions: number;
   transit: number;
   other: number;
+  // Expanded in V4
+  pharmacy: number;
+  onlineShopping: number;
+  homeImprovement: number;
+  canadianTirePartners: number;
+  foreignPurchases: number;
+}
+
+export type RewardType    = "cashback" | "points" | "both";
+export type FeePreference = "no_fee" | "include_fee";
+export type CardNetwork   = "visa" | "mastercard" | "amex";
+
+export interface FormFilters {
+  rewardType:          RewardType;
+  feePreference:       FeePreference;
+  rogersOwner:         boolean;
+  amazonPrime:         boolean;
+  institutions:        string[];
+  networks:            CardNetwork[];
+  benefits: {
+    noForeignFee:        boolean;
+    airportLounge:       boolean;
+    loungeVisitsPerYear: number;
+    priorityTravel:      boolean;
+    freeCheckedBag:      boolean;
+  };
+}
+
+export interface SpendingFormSubmission {
+  spending:             SpendingBreakdown;
+  filters:              FormFilters;
+  annualIncome?:        number;
+  householdIncome?:     number;
+  estimatedCreditScore?: number;
 }
 
 export interface Profile {
@@ -89,38 +127,6 @@ export async function deleteProfile(id: number): Promise<void> {
   if (!res.ok) throw new Error(`Failed to delete profile: ${res.status}`);
 }
 
-export interface ProfileSummaryDto {
-  id: number;
-  name: string;
-  profileType: ProfileType;
-}
-
-export interface ProfileOptimization {
-  profile: ProfileSummaryDto;
-  bestCard: CardSummary;
-  breakdown: CategoryBreakdown[];
-  netAnnualValue: number;
-}
-
-export interface HouseholdOptimizationResult {
-  assignments: ProfileOptimization[];
-  combinedNetAnnualValue: number;
-  isDualCardStrategy: boolean;
-  insight: string;
-}
-
-export async function fetchHouseholdOptimization(
-  profileIds: number[]
-): Promise<HouseholdOptimizationResult> {
-  const res = await fetch(`${API_BASE}/api/optimize`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ profileIds }),
-  });
-  if (!res.ok) throw new Error(`Failed to optimize household: ${res.status}`);
-  return res.json();
-}
-
 export async function fetchCards(): Promise<CardSummary[]> {
   const res = await fetch(`${API_BASE}/api/cards`);
   if (!res.ok) throw new Error(`Failed to fetch cards: ${res.status}`);
@@ -128,7 +134,15 @@ export async function fetchCards(): Promise<CardSummary[]> {
 }
 
 export async function fetchRecommendations(
-  args: { profileId: number } | { spending: SpendingBreakdown }
+  args: (
+    | { profileId: number }
+    | { spending: SpendingBreakdown }
+  ) & {
+    filters?:              FormFilters;
+    annualIncome?:         number;
+    householdIncome?:      number;
+    estimatedCreditScore?: number;
+  }
 ): Promise<RecommendationResult[]> {
   const res = await fetch(`${API_BASE}/api/recommendations`, {
     method: "POST",

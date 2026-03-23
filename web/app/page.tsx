@@ -4,14 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import SpendingForm from "@/app/components/SpendingForm";
 import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 import CardResults from "@/app/components/CardResults";
-import HouseholdOptimizer from "@/app/components/HouseholdOptimizer";
 import SaveProfilePrompt from "@/app/components/SaveProfilePrompt";
 import { useProfile } from "@/context/ProfileContext";
 import { useRecommendations } from "@/hooks/useRecommendations";
-import type { SpendingBreakdown } from "@/lib/api";
+import type { SpendingBreakdown, SpendingFormSubmission } from "@/lib/api";
 
 export default function Home() {
-  const { activeProfile, profiles, saveActiveProfileSpending } = useProfile();
+  const { activeProfile, saveActiveProfileSpending } = useProfile();
   const { results, isCalculating, error, calculate, clearResults } = useRecommendations();
 
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -29,13 +28,12 @@ export default function Home() {
     }
   }, [activeProfile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function handleSubmit(spending: SpendingBreakdown) {
-    console.debug("[FindBestCards] submitting spending:", JSON.stringify(spending));
+  function handleSubmit({ spending, filters, annualIncome, householdIncome, estimatedCreditScore }: SpendingFormSubmission) {
+    console.debug("[FindBestCards] submitting:", JSON.stringify({ spending, filters, annualIncome, householdIncome, estimatedCreditScore }));
     if (!activeProfile) {
       setLastAnonymousSpending(spending);
     }
-    calculate({ spending });
-    // Scroll results pane back to top on every new search
+    calculate({ spending, filters, annualIncome, householdIncome, estimatedCreditScore });
     if (resultsRef.current) {
       resultsRef.current.scrollTop = 0;
     }
@@ -48,7 +46,7 @@ export default function Home() {
       Mobile  : single column, standard page scroll
       Desktop : fixed-height split pane — left fixed, right scrolls independently
     */
-    <div className="flex flex-col bg-[#F8F9FA] dark:bg-[#202124] lg:h-[calc(100vh-3.5rem)] lg:flex-row lg:overflow-hidden">
+    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col bg-[#F8F9FA] dark:bg-[#202124] lg:min-h-0 lg:h-[calc(100vh-3.5rem)] lg:flex-row lg:overflow-hidden">
 
       {/* ── Left pane — inputs ─────────────────────────────────────────── */}
       <aside className="scroll-pane shrink-0 border-b border-[#DADCE0] bg-[#F8F9FA] px-6 py-8 dark:border-[#3C4043] dark:bg-[#202124] lg:w-2/5 lg:overflow-y-auto lg:border-b-0 lg:border-r">
@@ -80,10 +78,6 @@ export default function Home() {
                 spending={lastAnonymousSpending!}
                 onSaved={() => setLastAnonymousSpending(null)}
               />
-            )}
-
-            {profiles.length >= 2 && (
-              <HouseholdOptimizer profiles={profiles} />
             )}
           </div>
         ) : (

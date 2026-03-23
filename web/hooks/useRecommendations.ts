@@ -2,22 +2,27 @@
 
 import { useCallback, useRef, useState } from "react";
 import { fetchRecommendations } from "@/lib/api";
-import type { RecommendationResult, SpendingBreakdown } from "@/lib/api";
+import type { FormFilters, RecommendationResult, SpendingBreakdown } from "@/lib/api";
 
 /** Minimum perceived-loading duration in milliseconds. */
 const MIN_LOADING_MS = 800;
 
-/** O(n) deep equality over the fixed SpendingBreakdown shape. */
+/** O(n) deep equality over all 13 SpendingBreakdown fields. */
 function spendingEqual(a: SpendingBreakdown, b: SpendingBreakdown): boolean {
   return (
-    a.groceries     === b.groceries     &&
-    a.dining        === b.dining        &&
-    a.gas           === b.gas           &&
-    a.travel        === b.travel        &&
-    a.entertainment === b.entertainment &&
-    a.subscriptions === b.subscriptions &&
-    a.transit       === b.transit       &&
-    a.other         === b.other
+    a.groceries            === b.groceries            &&
+    a.dining               === b.dining               &&
+    a.gas                  === b.gas                  &&
+    a.travel               === b.travel               &&
+    a.entertainment        === b.entertainment        &&
+    a.subscriptions        === b.subscriptions        &&
+    a.transit              === b.transit              &&
+    a.other                === b.other                &&
+    a.pharmacy             === b.pharmacy             &&
+    a.onlineShopping       === b.onlineShopping       &&
+    a.homeImprovement      === b.homeImprovement      &&
+    a.canadianTirePartners === b.canadianTirePartners &&
+    a.foreignPurchases     === b.foreignPurchases
   );
 }
 
@@ -25,10 +30,13 @@ function spendingEqual(a: SpendingBreakdown, b: SpendingBreakdown): boolean {
  * Unified args type.
  * Always pass `spending` for cache comparison — the hook uses `profileId`
  * for the API call when present so the backend stays authoritative.
+ * Optional `filters`, `annualIncome`, `householdIncome`, and
+ * `estimatedCreditScore` are forwarded to the backend and bust the cache
+ * when they differ from the previous call.
  */
 type CalculateArgs =
-  | { profileId: number; spending: SpendingBreakdown }
-  | { spending: SpendingBreakdown };
+  | { profileId: number; spending: SpendingBreakdown; filters?: FormFilters; annualIncome?: number; householdIncome?: number; estimatedCreditScore?: number }
+  | { spending: SpendingBreakdown; filters?: FormFilters; annualIncome?: number; householdIncome?: number; estimatedCreditScore?: number };
 
 interface UseRecommendationsReturn {
   results: RecommendationResult[];
@@ -39,18 +47,25 @@ interface UseRecommendationsReturn {
 }
 
 export function useRecommendations(): UseRecommendationsReturn {
-  const [results, setResults]           = useState<RecommendationResult[]>([]);
-  const [isCalculating, setIsCalculating] = useState(false);
-  const [error, setError]               = useState<string | null>(null);
+  const [results, setResults]               = useState<RecommendationResult[]>([]);
+  const [isCalculating, setIsCalculating]   = useState(false);
+  const [error, setError]                   = useState<string | null>(null);
 
-  /** Tracks the spending that produced the current results for cache comparison. */
+  /** Tracks the spending + filters + eligibility that produced the current results. */
   const lastSpendingRef = useRef<SpendingBreakdown | null>(null);
+  const lastFiltersRef  = useRef<string | null>(null);
 
   const calculate = useCallback(async (args: CalculateArgs) => {
-    // Cache hit: skip the round-trip only if spending is byte-for-byte identical.
-    // Always logs in dev so you can verify the payload being evaluated.
+    // Cache hit: skip the round-trip only if spending AND all filter/eligibility fields are identical.
     if (lastSpendingRef.current) {
-      const hit = spendingEqual(lastSpendingRef.current, args.spending);
+      const filtersKey = JSON.stringify({
+        filters:              args.filters              ?? null,
+        annualIncome:         args.annualIncome         ?? null,
+        householdIncome:      args.householdIncome      ?? null,
+        estimatedCreditScore: args.estimatedCreditScore ?? null,
+      });
+      const hit = spendingEqual(lastSpendingRef.current, args.spending)
+               && lastFiltersRef.current === filtersKey;
       console.debug(
         "[useRecommendations] cache %s — spending:",
         hit ? "HIT (skipping fetch)" : "MISS (fetching)",
@@ -66,10 +81,22 @@ export function useRecommendations(): UseRecommendationsReturn {
     try {
       // For manual submits we always send spending inline so the backend uses
       // the live form values, not whatever is persisted in the DB.
-      const fetchArgs: Parameters<typeof fetchRecommendations>[0] =
+      const fetchArgs =
         "profileId" in args
-          ? { profileId: args.profileId }
-          : { spending: args.spending };
+          ? {
+              profileId:            args.profileId,
+              filters:              args.filters,
+              annualIncome:         args.annualIncome,
+              householdIncome:      args.householdIncome,
+              estimatedCreditScore: args.estimatedCreditScore,
+            }
+          : {
+              spending:             args.spending,
+              filters:              args.filters,
+              annualIncome:         args.annualIncome,
+              householdIncome:      args.householdIncome,
+              estimatedCreditScore: args.estimatedCreditScore,
+            };
 
       console.debug("[useRecommendations] → POST /api/recommendations", JSON.stringify(fetchArgs));
       const data = await fetchRecommendations(fetchArgs);
@@ -82,6 +109,12 @@ export function useRecommendations(): UseRecommendationsReturn {
 
       setResults(data);
       lastSpendingRef.current = { ...args.spending };
+      lastFiltersRef.current  = JSON.stringify({
+        filters:              args.filters              ?? null,
+        annualIncome:         args.annualIncome         ?? null,
+        householdIncome:      args.householdIncome      ?? null,
+        estimatedCreditScore: args.estimatedCreditScore ?? null,
+      });
     } catch (err) {
       setError(
         err instanceof Error
@@ -97,6 +130,7 @@ export function useRecommendations(): UseRecommendationsReturn {
     setResults([]);
     setError(null);
     lastSpendingRef.current = null;
+    lastFiltersRef.current  = null;
   }, []);
 
   return { results, isCalculating, error, calculate, clearResults };

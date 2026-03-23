@@ -1,63 +1,12 @@
 "use client";
 
 import { useState } from "react";
-
-/* ── Types ──────────────────────────────────────────────────────────────── */
-
-export type CardNetwork = "visa" | "mastercard" | "amex";
+import type { CardNetwork } from "@/lib/api";
+import { VisaMark, MastercardMark, AmexMark } from "./NetworkMarks";
 
 interface NetworkModuleProps {
   onChange: (networks: CardNetwork[]) => void;
   initialSelected?: CardNetwork[];
-}
-
-/* ── Network mark SVGs (same style as CardResults) ─────────────────────── */
-
-function VisaMark() {
-  return (
-    <svg viewBox="0 0 48 16" className="h-5 w-auto" aria-label="Visa">
-      <text
-        x="0"
-        y="13"
-        fontFamily="Arial, sans-serif"
-        fontWeight="bold"
-        fontStyle="italic"
-        fontSize="16"
-        fill="currentColor"
-        letterSpacing="-0.5"
-      >
-        VISA
-      </text>
-    </svg>
-  );
-}
-
-function MastercardMark() {
-  return (
-    <svg viewBox="0 0 38 24" className="h-6 w-auto" aria-label="Mastercard">
-      <circle cx="14" cy="12" r="10" fill="#EB001B" />
-      <circle cx="24" cy="12" r="10" fill="#F79E1B" />
-      <path d="M19 5.5a10 10 0 0 1 0 13A10 10 0 0 1 19 5.5z" fill="#FF5F00" />
-    </svg>
-  );
-}
-
-function AmexMark() {
-  return (
-    <svg viewBox="0 0 48 16" className="h-5 w-auto" aria-label="Amex">
-      <text
-        x="0"
-        y="13"
-        fontFamily="Arial, sans-serif"
-        fontWeight="bold"
-        fontSize="13"
-        fill="currentColor"
-        letterSpacing="1.5"
-      >
-        AMEX
-      </text>
-    </svg>
-  );
 }
 
 /* ── Network config ─────────────────────────────────────────────────────── */
@@ -71,19 +20,19 @@ const NETWORKS: {
   {
     id: "visa",
     label: "Visa",
-    mark: <VisaMark />,
+    mark: <VisaMark className="h-5 w-auto" />,
     note: "Accepted virtually everywhere in Canada",
   },
   {
     id: "mastercard",
     label: "Mastercard",
-    mark: <MastercardMark />,
+    mark: <MastercardMark className="h-6 w-auto" />,
     note: "Accepted at Costco & Loblaw banner stores",
   },
   {
     id: "amex",
     label: "American Express",
-    mark: <AmexMark />,
+    mark: <AmexMark className="h-5 w-auto" />,
     note: "Not accepted at Costco or most Loblaw stores",
   },
 ];

@@ -2,60 +2,11 @@
 
 import { useState } from "react";
 import type { RecommendationResult } from "@/lib/api";
+import { VisaMark, MastercardMark, AmexMark } from "./NetworkMarks";
 
 interface CardResultsProps {
   results: RecommendationResult[];
   isCalculating?: boolean;
-}
-
-/* ── Network mark SVGs (monochromatic) ─────────────────────────────────── */
-
-function VisaMark() {
-  return (
-    <svg viewBox="0 0 48 16" className="h-4 w-auto" aria-label="Visa">
-      <text
-        x="0" y="13"
-        fontFamily="Arial, sans-serif"
-        fontWeight="bold"
-        fontStyle="italic"
-        fontSize="16"
-        fill="#1A1A6E"
-        letterSpacing="-0.5"
-      >
-        VISA
-      </text>
-    </svg>
-  );
-}
-
-function MastercardMark() {
-  return (
-    <svg viewBox="0 0 38 24" className="h-5 w-auto" aria-label="Mastercard">
-      <circle cx="14" cy="12" r="10" fill="#EB001B" />
-      <circle cx="24" cy="12" r="10" fill="#F79E1B" />
-      <path
-        d="M19 5.5a10 10 0 0 1 0 13A10 10 0 0 1 19 5.5z"
-        fill="#FF5F00"
-      />
-    </svg>
-  );
-}
-
-function AmexMark() {
-  return (
-    <svg viewBox="0 0 48 16" className="h-4 w-auto" aria-label="Amex">
-      <text
-        x="0" y="13"
-        fontFamily="Arial, sans-serif"
-        fontWeight="bold"
-        fontSize="13"
-        fill="#007BC1"
-        letterSpacing="1.5"
-      >
-        AMEX
-      </text>
-    </svg>
-  );
 }
 
 const NETWORK_MARKS: Record<string, React.ReactNode> = {

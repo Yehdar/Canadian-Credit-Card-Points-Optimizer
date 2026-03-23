@@ -48,11 +48,10 @@ const DEFAULT_FILTERS: FormFilters = {
   institutions:  [],
   networks:      ["visa", "mastercard", "amex"],
   benefits: {
-    noForeignFee:        false,
-    airportLounge:       false,
-    loungeVisitsPerYear: 4,
-    priorityTravel:      false,
-    freeCheckedBag:      false,
+    noForeignFee:   false,
+    airportLounge:  false,
+    priorityTravel: false,
+    freeCheckedBag: false,
   },
 };
 

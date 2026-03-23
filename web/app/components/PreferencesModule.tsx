@@ -1,11 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-/* ── Types ──────────────────────────────────────────────────────────────── */
-
-export type RewardType = "cashback" | "points" | "both";
-export type FeePreference = "no_fee" | "include_fee";
+import type { RewardType, FeePreference } from "@/lib/api";
 
 /**
  * Representative numeric values for each credit-score bucket.

@@ -56,6 +56,15 @@ const DEFAULT_FILTERS: FormFilters = {
   },
 };
 
+const DEFAULT_PREFERENCES: Preferences = {
+  rewardType:           DEFAULT_FILTERS.rewardType    as RewardType,
+  feePreference:        DEFAULT_FILTERS.feePreference as FeePreference,
+  annualIncome:         null,
+  householdIncome:      null,
+  useHousehold:         false,
+  estimatedCreditScore: null,
+};
+
 /**
  * Maps the 13-field SpendingBreakdown (API shape) to the category keys used
  * by SpendingModule. All fields now have a direct 1-to-1 mapping.
@@ -92,11 +101,8 @@ export default function SpendingForm({
     initialSpending ?? DEFAULT_SPENDING
   );
 
-  // Filter state
-  const [preferences,  setPreferences]  = useState<Preferences>({
-    rewardType:    DEFAULT_FILTERS.rewardType    as RewardType,
-    feePreference: DEFAULT_FILTERS.feePreference as FeePreference,
-  });
+  // Filter + eligibility state
+  const [preferences,  setPreferences]  = useState<Preferences>(DEFAULT_PREFERENCES);
   const [bonuses,      setBonuses]      = useState<Bonuses>({
     rogersOwner: DEFAULT_FILTERS.rogersOwner,
     amazonPrime: DEFAULT_FILTERS.amazonPrime,
@@ -109,7 +115,8 @@ export default function SpendingForm({
     DEFAULT_FILTERS.benefits
   );
 
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving,      setIsSaving]      = useState(false);
+  const [incomeError,   setIncomeError]   = useState<string | null>(null);
 
   // Build the FormFilters object from local state
   function buildFilters(): FormFilters {
@@ -124,9 +131,37 @@ export default function SpendingForm({
     };
   }
 
+  function validate(): boolean {
+    const income = preferences.useHousehold
+      ? preferences.householdIncome
+      : preferences.annualIncome;
+
+    if (income !== null && income < 0) {
+      setIncomeError("Income cannot be negative.");
+      return false;
+    }
+    setIncomeError(null);
+    return true;
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onSubmit({ spending, filters: buildFilters() });
+    if (!validate()) return;
+
+    const submission: SpendingFormSubmission = {
+      spending,
+      filters: buildFilters(),
+    };
+
+    // Only attach eligibility fields when the user actually provided values
+    if (preferences.annualIncome !== null)
+      submission.annualIncome = preferences.annualIncome;
+    if (preferences.householdIncome !== null)
+      submission.householdIncome = preferences.householdIncome;
+    if (preferences.estimatedCreditScore !== null)
+      submission.estimatedCreditScore = preferences.estimatedCreditScore;
+
+    onSubmit(submission);
   }
 
   async function handleSave() {
@@ -161,8 +196,12 @@ export default function SpendingForm({
         initialValues={initialSpending ? toModuleInitialValues(initialSpending) : undefined}
       />
 
-      {/* ── Section 2: Preferences ─────────────────────────────────────── */}
+      {/* ── Section 2: Preferences (incl. income & credit score) ────────── */}
       <PreferencesModule onChange={setPreferences} />
+
+      {incomeError && (
+        <p className="px-1 text-[12px] text-red-500">{incomeError}</p>
+      )}
 
       {/* ── Section 3: Subscription Bonuses ────────────────────────────── */}
       <BonusesModule onChange={setBonuses} />

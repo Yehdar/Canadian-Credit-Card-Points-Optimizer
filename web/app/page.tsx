@@ -28,12 +28,12 @@ export default function Home() {
     }
   }, [activeProfile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function handleSubmit({ spending, filters }: SpendingFormSubmission) {
-    console.debug("[FindBestCards] submitting:", JSON.stringify({ spending, filters }));
+  function handleSubmit({ spending, filters, annualIncome, householdIncome, estimatedCreditScore }: SpendingFormSubmission) {
+    console.debug("[FindBestCards] submitting:", JSON.stringify({ spending, filters, annualIncome, householdIncome, estimatedCreditScore }));
     if (!activeProfile) {
       setLastAnonymousSpending(spending);
     }
-    calculate({ spending, filters });
+    calculate({ spending, filters, annualIncome, householdIncome, estimatedCreditScore });
     if (resultsRef.current) {
       resultsRef.current.scrollTop = 0;
     }

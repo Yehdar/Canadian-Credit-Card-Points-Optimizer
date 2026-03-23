@@ -25,6 +25,8 @@ export interface RecommendationResult {
   totalPointsEarned: number;
   totalValueCAD: number;
   netAnnualValue: number;
+  /** Present when the user's credit score is within the soft buffer of the card's minimum. */
+  eligibilityWarning?: string;
 }
 
 export interface SpendingBreakdown {
@@ -66,8 +68,11 @@ export interface FormFilters {
 }
 
 export interface SpendingFormSubmission {
-  spending: SpendingBreakdown;
-  filters:  FormFilters;
+  spending:             SpendingBreakdown;
+  filters:              FormFilters;
+  annualIncome?:        number;
+  householdIncome?:     number;
+  estimatedCreditScore?: number;
 }
 
 export interface Profile {
@@ -132,7 +137,12 @@ export async function fetchRecommendations(
   args: (
     | { profileId: number }
     | { spending: SpendingBreakdown }
-  ) & { filters?: FormFilters }
+  ) & {
+    filters?:              FormFilters;
+    annualIncome?:         number;
+    householdIncome?:      number;
+    estimatedCreditScore?: number;
+  }
 ): Promise<RecommendationResult[]> {
   const res = await fetch(`${API_BASE}/api/recommendations`, {
     method: "POST",

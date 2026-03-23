@@ -11,12 +11,21 @@ data class SpendingRequest(val spending: SpendingBreakdown)
  * Callers supply EITHER a saved [profileId] OR an inline [spending] breakdown.
  * Supplying both is an error; supplying neither is an error.
  * An optional [filters] object restricts which cards are returned.
+ *
+ * [annualIncome] and [householdIncome] are the user's personal and household annual
+ * income in CAD. [estimatedCreditScore] is the user's self-reported credit score.
+ * When provided, cards whose minimum income or credit thresholds exceed these values
+ * are hard-filtered out; cards close to a credit-score threshold surface an
+ * [RecommendationResult.eligibilityWarning].
  */
 @Serializable
 data class RecommendationsRequest(
-    val profileId: Int?              = null,
-    val spending:  SpendingBreakdown? = null,
-    val filters:   FormFilters?       = null
+    val profileId:            Int?              = null,
+    val spending:             SpendingBreakdown? = null,
+    val filters:              FormFilters?       = null,
+    val annualIncome:         Int?              = null,
+    val householdIncome:      Int?              = null,
+    val estimatedCreditScore: Int?              = null
 )
 
 @Serializable
@@ -94,9 +103,11 @@ data class CategoryBreakdown(
 
 @Serializable
 data class RecommendationResult(
-    val card:              CardSummary,
-    val breakdown:         List<CategoryBreakdown>,
-    val totalPointsEarned: Double,
-    val totalValueCAD:     Double,
-    val netAnnualValue:    Double
+    val card:               CardSummary,
+    val breakdown:          List<CategoryBreakdown>,
+    val totalPointsEarned:  Double,
+    val totalValueCAD:      Double,
+    val netAnnualValue:     Double,
+    /** Non-null when the user's credit score is within the soft buffer of the card's minimum. */
+    val eligibilityWarning: String? = null
 )

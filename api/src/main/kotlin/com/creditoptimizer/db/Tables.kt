@@ -27,6 +27,11 @@ object CreditCards : Table("credit_cards") {
     val issuerIconUrl  = varchar("issuer_icon_url", 255).nullable()
     val isPointsBased  = bool("is_points_based")
 
+    // Eligibility thresholds (added in V7); NULL means no minimum enforced
+    val minIncomePersonal  = integer("min_income_personal").nullable()
+    val minIncomeHousehold = integer("min_income_household").nullable()
+    val minCreditScore     = integer("min_credit_score").nullable()
+
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -60,6 +65,11 @@ object SpendingProfiles : IntIdTable("spending_profiles") {
     val homeImprovement        = decimal("home_improvement",       10, 2)
     val canadianTirePartners   = decimal("canadian_tire_partners", 10, 2)
     val foreignPurchases       = decimal("foreign_purchases",      10, 2)
+
+    // Eligibility inputs (added in V7); NULL means user did not provide
+    val annualIncome          = integer("annual_income").nullable()
+    val householdIncome       = integer("household_income").nullable()
+    val estimatedCreditScore  = integer("estimated_credit_score").nullable()
 
     val createdAt     = timestamp("created_at")
     val updatedAt     = timestamp("updated_at")

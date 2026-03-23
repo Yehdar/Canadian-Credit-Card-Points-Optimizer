@@ -18,14 +18,19 @@ const NETWORK_MARKS: Record<string, React.ReactNode> = {
 /* ── Helpers ────────────────────────────────────────────────────────────── */
 
 const CATEGORY_LABELS: Record<string, string> = {
-  groceries:     "Groceries",
-  dining:        "Dining",
-  gas:           "Gas",
-  travel:        "Travel",
-  entertainment: "Entertainment",
-  subscriptions: "Subscriptions",
-  transit:       "Transit",
-  other:         "Other",
+  groceries:              "Groceries",
+  dining:                 "Dining",
+  gas:                    "Gas",
+  travel:                 "Travel",
+  entertainment:          "Entertainment",
+  subscriptions:          "Subscriptions",
+  transit:                "Transit",
+  other:                  "Other",
+  pharmacy:               "Pharmacy",
+  online_shopping:        "Online Shopping",
+  home_improvement:       "Home Improvement",
+  canadian_tire_partners: "Canadian Tire Partners",
+  foreign_purchases:      "Foreign Purchases",
 };
 
 function formatCAD(value: number): string {

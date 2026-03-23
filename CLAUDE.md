@@ -44,7 +44,6 @@ An AI-powered app to maximize credit card rewards for Canadians based on financi
 | free_checked_bag | BOOLEAN | V5 |
 | rogers_bonus_multiplier | NUMERIC(4,2) | V5 — applied when user owns Rogers products |
 | amazon_prime_multiplier | NUMERIC(4,2) | V5 — applied when user has Amazon Prime |
-| issuer_icon_url | VARCHAR(255) nullable | V6 — exists in DB but not declared in ORM (orphaned) |
 | min_income_personal | INTEGER nullable | V7 — NULL = no minimum |
 | min_income_household | INTEGER nullable | V7 |
 | min_credit_score | INTEGER nullable | V7 |

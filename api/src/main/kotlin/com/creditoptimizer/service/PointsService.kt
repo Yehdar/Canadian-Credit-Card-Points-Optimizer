@@ -149,16 +149,24 @@ class PointsService {
                 else -> 1.0
             }
 
+            val otherRate = card.earnRates.getOrDefault("other", 0.0)
+
             val breakdown = spendMap.entries
                 .filter { (_, amount) -> amount > 0.0 }
                 .mapNotNull { (category, monthlySpend) ->
-                    val baseRate = card.earnRates.getOrDefault(category, 0.0)
-                    // Skip categories this card earns nothing on — keeps breakdown clean
+                    // Fall back to the card's "other" base rate for any category that
+                    // isn't explicitly seeded (e.g. home_improvement on an older card).
+                    val baseRate = card.earnRates.getOrDefault(category, otherRate)
+                    // Skip only if there is truly no rate at all (not even a base rate)
                     if (baseRate == 0.0) return@mapNotNull null
                     val earnRate     = baseRate * bonusMultiplier
                     val annualSpend  = monthlySpend * 12.0
                     val pointsEarned = annualSpend * earnRate
                     val valueCAD     = round2(pointsEarned * card.cpp / 100.0)
+                    log.debug(
+                        "[Calc] card=\"{}\" category={} monthlySpend={} earnRate={} cpp={} valueCAD={}",
+                        card.name, category, monthlySpend, earnRate, card.cpp, valueCAD
+                    )
                     CategoryBreakdown(
                         category     = category,
                         spent        = annualSpend,

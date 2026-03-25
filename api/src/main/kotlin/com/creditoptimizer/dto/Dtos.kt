@@ -2,10 +2,6 @@ package com.creditoptimizer.dto
 
 import kotlinx.serialization.Serializable
 
-/** Legacy direct-spend request — kept for backwards compatibility. */
-@Serializable
-data class SpendingRequest(val spending: SpendingBreakdown)
-
 /**
  * Unified recommendations request.
  * Callers supply EITHER a saved [profileId] OR an inline [spending] breakdown.
@@ -51,11 +47,10 @@ data class SpendingBreakdown(
 /** Per-perk filter flags from the BenefitsModule. */
 @Serializable
 data class BenefitFilters(
-    val noForeignFee:        Boolean = false,
-    val airportLounge:       Boolean = false,
-    val loungeVisitsPerYear: Int     = 4,
-    val priorityTravel:      Boolean = false,
-    val freeCheckedBag:      Boolean = false
+    val noForeignFee:  Boolean = false,
+    val airportLounge: Boolean = false,
+    val priorityTravel: Boolean = false,
+    val freeCheckedBag: Boolean = false
 )
 
 /**

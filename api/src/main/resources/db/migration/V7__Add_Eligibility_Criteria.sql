@@ -5,12 +5,13 @@
 --      NULL means no minimum is enforced for that dimension.
 --   2. Add annual_income, household_income, estimated_credit_score to spending_profiles
 --      so eligibility inputs can be persisted with a saved profile.
---   3. Seed income/credit-score thresholds for the existing 25 cards:
---        - Visa Infinite tier  : $60 k personal / $100 k household / 725 credit score
---        - World Elite tier    : $80 k personal / $150 k household / 760 credit score
---        - Amex Platinum       : 750 credit score (no official income floor)
---        - Scotiabank Gold Amex: 700 credit score (no official income floor)
---        - All other cards     : no minimums (columns remain NULL)
+--   3. Seed precise per-card eligibility thresholds using exact name matches.
+--
+-- NOTE: Broad ILIKE patterns are intentionally avoided here. Cards like
+-- "PC Financial World Elite Mastercard" and "Canadian Tire Triangle World Elite
+-- Mastercard" carry the "World Elite" name but have no income minimum (they are
+-- co-brand/retail cards). Similarly, Visa Infinite cards generally require a 680
+-- credit score, not 725. Exact name matches prevent these false positives.
 
 -- ── 1. Credit-card eligibility thresholds ────────────────────────────────────
 
@@ -34,43 +35,84 @@ COMMENT ON COLUMN spending_profiles.annual_income          IS 'User''s personal 
 COMMENT ON COLUMN spending_profiles.household_income       IS 'User''s household annual income in CAD.';
 COMMENT ON COLUMN spending_profiles.estimated_credit_score IS 'User''s self-reported estimated credit score.';
 
--- ── 3. Seed Visa Infinite tier thresholds ────────────────────────────────────
--- Standard Canadian Visa Infinite requirement: $60 k personal or $100 k household, 725 score.
+-- ── 3. No-income cards with a credit-score floor ──────────────────────────────
+-- These cards are open to most applicants but still expect a minimum credit health.
+
+UPDATE credit_cards SET min_credit_score = 660 WHERE name = 'Amex Cobalt';
+UPDATE credit_cards SET min_credit_score = 700 WHERE name = 'Scotiabank Gold American Express';
+UPDATE credit_cards SET min_credit_score = 660 WHERE name = 'RBC ION+ Visa';
+UPDATE credit_cards SET min_credit_score = 660 WHERE name = 'Amex SimplyCash Preferred';
+UPDATE credit_cards SET min_credit_score = 700 WHERE name = 'Amex Platinum Card';
+UPDATE credit_cards SET min_credit_score = 660 WHERE name = 'Tangerine World Mastercard';
+UPDATE credit_cards SET min_credit_score = 660 WHERE name = 'Simplii Financial Cash Back Visa';
+UPDATE credit_cards SET min_credit_score = 600 WHERE name = 'Neo Financial Mastercard';
+
+-- Co-brand/retail World Elite cards: no income minimum, accessible credit floor
+UPDATE credit_cards SET min_credit_score = 660 WHERE name = 'PC Financial World Elite Mastercard';
+UPDATE credit_cards SET min_credit_score = 660 WHERE name = 'Canadian Tire Triangle World Elite Mastercard';
+UPDATE credit_cards SET min_credit_score = 660 WHERE name = 'MBNA Amazon.ca Rewards Mastercard';
+
+-- Wealthsimple Cash Visa: no requirements (prepaid-style; NULL = no minimum)
+
+-- ── 4. Visa Infinite tier ─────────────────────────────────────────────────────
+-- Standard Canadian Visa Infinite requirement: $60 k personal or $100 k household.
+-- Most issuers set a 680 credit-score floor; Scotia/BMO-branded cards use 700.
 
 UPDATE credit_cards
 SET min_income_personal  = 60000,
     min_income_household = 100000,
-    min_credit_score     = 725
-WHERE name ILIKE '%Visa Infinite%';
+    min_credit_score     = 680
+WHERE name IN (
+    'TD First Class Travel Visa Infinite',
+    'TD Aeroplan Visa Infinite',
+    'RBC Avion Visa Infinite',
+    'CIBC Aventura Visa Infinite',
+    'CIBC Dividend Visa Infinite'
+);
 
--- ── 4. Seed World Elite Mastercard tier thresholds ───────────────────────────
--- Standard Canadian World Elite requirement: $80 k personal or $150 k household, 760 score.
+UPDATE credit_cards
+SET min_income_personal  = 60000,
+    min_income_household = 100000,
+    min_credit_score     = 700
+WHERE name IN (
+    'Scotiabank Passport Visa Infinite',
+    'BMO eclipse Visa Infinite'
+);
+
+-- ── 5. World Elite Mastercard tier ───────────────────────────────────────────
+-- Standard Canadian World Elite requirement: $80 k personal or $150 k household.
+-- Score requirement varies: flagship bank WE cards require 760; Rogers/Brim are ~700.
 
 UPDATE credit_cards
 SET min_income_personal  = 80000,
     min_income_household = 150000,
     min_credit_score     = 760
-WHERE name ILIKE '%World Elite%';
-
--- ── 5. Seed premium Amex thresholds ──────────────────────────────────────────
--- Amex Platinum has no published income floor but a high credit requirement.
-
-UPDATE credit_cards
-SET min_credit_score = 750
-WHERE name ILIKE '%Platinum%'
-  AND issuer ILIKE '%American Express%';
-
--- ── 6. Seed Scotiabank Gold Amex threshold ───────────────────────────────────
--- Good-credit card; no official income minimum.
+WHERE name IN (
+    'BMO World Elite Mastercard',
+    'National Bank World Elite Mastercard'
+);
 
 UPDATE credit_cards
-SET min_credit_score = 700
-WHERE name ILIKE '%Scotiabank Gold%';
-
--- ── 7. Seed Desjardins Odyssey Gold Visa threshold ───────────────────────────
--- Sits between standard and Visa Infinite; 680 score is a reasonable floor.
+SET min_income_personal  = 80000,
+    min_income_household = 150000,
+    min_credit_score     = 700
+WHERE name IN (
+    'Rogers Red World Elite Mastercard',
+    'Brim World Elite Mastercard'
+);
 
 UPDATE credit_cards
-SET min_credit_score = 680
-WHERE name ILIKE '%Odyssey%'
-  AND name NOT ILIKE '%World Elite%';
+SET min_income_personal  = 80000,
+    min_income_household = 150000,
+    min_credit_score     = 720
+WHERE name = 'RBC WestJet World Elite Mastercard';
+
+-- ── 6. Desjardins Odyssey World Elite Visa Infinite ───────────────────────────
+-- Carries both Visa Infinite and World Elite designations.
+-- Official requirement: $80 k personal or $150 k household, 750+ score.
+
+UPDATE credit_cards
+SET min_income_personal  = 80000,
+    min_income_household = 150000,
+    min_credit_score     = 750
+WHERE name = 'Desjardins Odyssey World Elite Visa Infinite';

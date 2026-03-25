@@ -24,7 +24,6 @@ object CreditCards : Table("credit_cards") {
     val amazonPrimeMultiplier = decimal("amazon_prime_multiplier", 4, 2)
 
     // Metadata (added in V6)
-    val issuerIconUrl  = varchar("issuer_icon_url", 255).nullable()
     val isPointsBased  = bool("is_points_based")
 
     // Eligibility thresholds (added in V7); NULL means no minimum enforced

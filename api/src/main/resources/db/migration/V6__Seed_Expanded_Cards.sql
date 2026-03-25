@@ -1,7 +1,7 @@
 -- V6: Expand card catalog from 11 to 25 cards.
 --
 -- Changes:
---   1. Add issuer_icon_url (VARCHAR, nullable) and is_points_based (BOOLEAN) to credit_cards.
+--   1. Add is_points_based (BOOLEAN) to credit_cards.
 --   2. Backfill the 5 V4 spend categories for the original 11 seeded cards.
 --   3. Insert 14 new cards covering all major Canadian issuers.
 --   4. Seed all 13 earn-rate categories for every new card.
@@ -11,13 +11,11 @@
 --   Big Five (RBC, TD, BMO, Scotiabank, CIBC) · Amex Canada · Rogers · PC Financial
 --   Wealthsimple · National Bank · Desjardins · Canadian Tire · MBNA · Neo · Brim · Tangerine · Simplii
 
--- ── 1. Add metadata columns ──────────────────────────────────────────────────
+-- ── 1. Add is_points_based column ───────────────────────────────────────────
 
 ALTER TABLE credit_cards
-    ADD COLUMN issuer_icon_url VARCHAR(255),          -- reserved for logo URLs; populated externally
     ADD COLUMN is_points_based BOOLEAN NOT NULL DEFAULT TRUE;
 
-COMMENT ON COLUMN credit_cards.issuer_icon_url IS 'CDN URL for the card issuer logo; populated by an admin process.';
 COMMENT ON COLUMN credit_cards.is_points_based IS 'TRUE = traditional points currency; FALSE = cash-back / CT Money / store-credit equivalent.';
 
 -- Cash-back cards already seeded in V2

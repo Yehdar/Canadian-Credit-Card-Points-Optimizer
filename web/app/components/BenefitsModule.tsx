@@ -6,21 +6,17 @@ import { Search } from "lucide-react";
 /* ── Types ──────────────────────────────────────────────────────────────── */
 
 export interface BenefitSelection {
-  noForeignFee: boolean;
-  airportLounge: boolean;
-  loungeVisitsPerYear: number;
+  noForeignFee:   boolean;
+  airportLounge:  boolean;
   priorityTravel: boolean;
   freeCheckedBag: boolean;
 }
 
-type BooleanBenefitKey = Exclude<keyof BenefitSelection, "loungeVisitsPerYear">;
-
 interface BenefitOption {
-  key: BooleanBenefitKey;
+  key: keyof BenefitSelection;
   label: string;
   sublabel: string;
   keywords: string[];
-  hasLoungeCount?: boolean;
 }
 
 interface BenefitsModuleProps {
@@ -42,7 +38,6 @@ const BENEFIT_OPTIONS: BenefitOption[] = [
     label: "Airport Lounge Access",
     sublabel: "Priority Pass, Dragon Pass, Plaza Premium, or proprietary lounge access",
     keywords: ["lounge", "airport", "priority pass", "dragon pass", "plaza premium", "vip"],
-    hasLoungeCount: true,
   },
   {
     key: "priorityTravel",
@@ -65,11 +60,10 @@ export default function BenefitsModule({
   initialBenefits = {},
 }: BenefitsModuleProps) {
   const [benefits, setBenefits] = useState<BenefitSelection>({
-    noForeignFee:        initialBenefits.noForeignFee        ?? false,
-    airportLounge:       initialBenefits.airportLounge       ?? false,
-    loungeVisitsPerYear: initialBenefits.loungeVisitsPerYear ?? 4,
-    priorityTravel:      initialBenefits.priorityTravel      ?? false,
-    freeCheckedBag:      initialBenefits.freeCheckedBag      ?? false,
+    noForeignFee:   initialBenefits.noForeignFee   ?? false,
+    airportLounge:  initialBenefits.airportLounge  ?? false,
+    priorityTravel: initialBenefits.priorityTravel ?? false,
+    freeCheckedBag: initialBenefits.freeCheckedBag ?? false,
   });
 
   const [query, setQuery] = useState("");
@@ -79,12 +73,8 @@ export default function BenefitsModule({
     onChange(next);
   }
 
-  function toggleBenefit(key: BooleanBenefitKey) {
+  function toggleBenefit(key: keyof BenefitSelection) {
     update({ ...benefits, [key]: !benefits[key] });
-  }
-
-  function setLoungeVisits(n: number) {
-    update({ ...benefits, loungeVisitsPerYear: Math.max(1, Math.min(12, n)) });
   }
 
   const q = query.trim().toLowerCase();
@@ -96,8 +86,7 @@ export default function BenefitsModule({
       )
     : BENEFIT_OPTIONS;
 
-  const selectedCount = (["noForeignFee", "airportLounge", "priorityTravel", "freeCheckedBag"] as BooleanBenefitKey[])
-    .filter((k) => benefits[k]).length;
+  const selectedCount = Object.values(benefits).filter(Boolean).length;
 
   return (
     <div className="rounded-2xl border border-[#DADCE0] bg-white p-6 dark:border-[#3C4043] dark:bg-[#292A2D]">
@@ -143,90 +132,54 @@ export default function BenefitsModule({
         {filtered.map((opt) => {
           const isSelected = benefits[opt.key];
           return (
-            <div key={opt.key}>
+            <div
+              key={opt.key}
+              role="checkbox"
+              aria-checked={isSelected}
+              tabIndex={0}
+              onClick={() => toggleBenefit(opt.key)}
+              onKeyDown={(e) => {
+                if (e.key === " " || e.key === "Enter") {
+                  e.preventDefault();
+                  toggleBenefit(opt.key);
+                }
+              }}
+              className={`flex cursor-pointer items-start gap-3.5 rounded-xl border p-4 transition-colors duration-150 ${
+                isSelected
+                  ? "border-black bg-black/[0.03] dark:border-[#E8EAED] dark:bg-[#E8EAED]/[0.05]"
+                  : "border-[#DADCE0] hover:border-[#BDC1C6] dark:border-[#3C4043] dark:hover:border-[#5F6368]"
+              }`}
+            >
+              {/* Custom checkbox indicator */}
               <div
-                role="checkbox"
-                aria-checked={isSelected}
-                tabIndex={0}
-                onClick={() => toggleBenefit(opt.key)}
-                onKeyDown={(e) => {
-                  if (e.key === " " || e.key === "Enter") {
-                    e.preventDefault();
-                    toggleBenefit(opt.key);
-                  }
-                }}
-                className={`flex cursor-pointer items-start gap-3.5 rounded-xl border p-4 transition-colors duration-150 ${
+                className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
                   isSelected
-                    ? "border-black bg-black/[0.03] dark:border-[#E8EAED] dark:bg-[#E8EAED]/[0.05]"
-                    : "border-[#DADCE0] hover:border-[#BDC1C6] dark:border-[#3C4043] dark:hover:border-[#5F6368]"
+                    ? "border-black bg-black dark:border-[#E8EAED] dark:bg-[#E8EAED]"
+                    : "border-[#DADCE0] bg-white dark:border-[#5F6368] dark:bg-[#292A2D]"
                 }`}
               >
-                {/* Custom checkbox indicator */}
-                <div
-                  className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
-                    isSelected
-                      ? "border-black bg-black dark:border-[#E8EAED] dark:bg-[#E8EAED]"
-                      : "border-[#DADCE0] bg-white dark:border-[#5F6368] dark:bg-[#292A2D]"
-                  }`}
-                >
-                  {isSelected && (
-                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                      <path
-                        d="M1 4L3.5 6.5L9 1"
-                        stroke="white"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="dark:stroke-[#202124]"
-                      />
-                    </svg>
-                  )}
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-medium text-black dark:text-[#E8EAED]">
-                    {opt.label}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-[#9AA0A6] dark:text-[#5F6368]">
-                    {opt.sublabel}
-                  </p>
-                </div>
+                {isSelected && (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path
+                      d="M1 4L3.5 6.5L9 1"
+                      stroke="white"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="dark:stroke-[#202124]"
+                    />
+                  </svg>
+                )}
               </div>
 
-              {/* Lounge visit counter — revealed when airport lounge is selected */}
-              {opt.hasLoungeCount && isSelected && (
-                <div className="mx-px flex items-center justify-between rounded-b-xl border border-t-0 border-black bg-black/[0.03] px-4 py-3 dark:border-[#E8EAED] dark:bg-[#E8EAED]/[0.05]">
-                  <span className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
-                    Visits per year
-                  </span>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setLoungeVisits(benefits.loungeVisitsPerYear - 1)}
-                      disabled={benefits.loungeVisitsPerYear <= 1}
-                      className="flex h-7 w-7 items-center justify-center rounded-full border border-[#DADCE0] text-[#5F6368] transition-colors hover:border-black hover:text-black disabled:opacity-30 dark:border-[#3C4043] dark:text-[#9AA0A6] dark:hover:border-[#E8EAED] dark:hover:text-[#E8EAED]"
-                    >
-                      <svg width="10" height="2" viewBox="0 0 10 2" fill="currentColor">
-                        <rect width="10" height="2" rx="1" />
-                      </svg>
-                    </button>
-                    <span className="w-4 text-center text-[14px] font-semibold text-black dark:text-[#E8EAED]">
-                      {benefits.loungeVisitsPerYear}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setLoungeVisits(benefits.loungeVisitsPerYear + 1)}
-                      disabled={benefits.loungeVisitsPerYear >= 12}
-                      className="flex h-7 w-7 items-center justify-center rounded-full border border-[#DADCE0] text-[#5F6368] transition-colors hover:border-black hover:text-black disabled:opacity-30 dark:border-[#3C4043] dark:text-[#9AA0A6] dark:hover:border-[#E8EAED] dark:hover:text-[#E8EAED]"
-                    >
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
-                        <rect x="4" width="2" height="10" rx="1" />
-                        <rect y="4" width="10" height="2" rx="1" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-medium text-black dark:text-[#E8EAED]">
+                  {opt.label}
+                </p>
+                <p className="mt-0.5 text-[11px] text-[#9AA0A6] dark:text-[#5F6368]">
+                  {opt.sublabel}
+                </p>
+              </div>
             </div>
           );
         })}

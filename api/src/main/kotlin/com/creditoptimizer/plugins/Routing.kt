@@ -1,8 +1,10 @@
 package com.creditoptimizer.plugins
 
+import com.creditoptimizer.dto.ChatRequest
 import com.creditoptimizer.dto.CreateProfileRequest
 import com.creditoptimizer.dto.RecommendationsRequest
 import com.creditoptimizer.dto.UpdateProfileRequest
+import com.creditoptimizer.service.GeminiService
 import com.creditoptimizer.service.PointsService
 import com.creditoptimizer.service.ProfileNotFoundException
 import com.creditoptimizer.service.ProfileService
@@ -25,6 +27,7 @@ fun Application.configureRouting() {
 
     val pointsService  = PointsService()
     val profileService = ProfileService()
+    val geminiService  = GeminiService(System.getenv("GEMINI_API_KEY") ?: "")
 
     routing {
         get("/health") {
@@ -32,6 +35,15 @@ fun Application.configureRouting() {
         }
 
         route("/api") {
+
+            // ------------------------------------------------------------------
+            // Chat  (Gemini 2.0 Flash — Akinator-style card advisor)
+            // ------------------------------------------------------------------
+            post("/chat") {
+                val request = call.receive<ChatRequest>()
+                val response = geminiService.chat(request.messages)
+                call.respond(HttpStatusCode.OK, response)
+            }
 
             // ------------------------------------------------------------------
             // Cards

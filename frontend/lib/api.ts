@@ -61,7 +61,7 @@ export interface FormFilters {
   benefits: {
     noForeignFee:        boolean;
     airportLounge:       boolean;
-priorityTravel:      boolean;
+    priorityTravel:      boolean;
     freeCheckedBag:      boolean;
   };
 }

@@ -61,7 +61,7 @@ export interface FormFilters {
   benefits: {
     noForeignFee:        boolean;
     airportLounge:       boolean;
-priorityTravel:      boolean;
+    priorityTravel:      boolean;
     freeCheckedBag:      boolean;
   };
 }
@@ -124,6 +124,28 @@ export async function updateProfile(id: number, payload: UpdateProfilePayload): 
 export async function deleteProfile(id: number): Promise<void> {
   const res = await fetch(`${API_BASE}/api/profiles/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error(`Failed to delete profile: ${res.status}`);
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+
+export interface ChatMessage {
+  role: "user" | "model";
+  content: string;
+}
+
+export interface ChatResponse {
+  message: string;
+  isDone: boolean;
+}
+
+export async function sendChatMessage(messages: ChatMessage[]): Promise<ChatResponse> {
+  const res = await fetch(`${API_BASE}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages }),
+  });
+  if (!res.ok) throw new Error(`Chat request failed: ${res.status}`);
+  return res.json();
 }
 
 export async function fetchRecommendations(

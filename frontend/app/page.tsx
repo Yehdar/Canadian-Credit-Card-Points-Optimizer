@@ -5,6 +5,7 @@ import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 import ChatPanel from "@/app/components/ChatPanel";
 import LiveProfileSidebar from "@/app/components/LiveProfileSidebar";
 import ArsenalModal from "@/app/components/ArsenalModal";
+import ActiveArsenalBanner from "@/app/components/ActiveArsenalBanner";
 import { useProfile } from "@/context/ProfileContext";
 import { useRecommendations } from "@/hooks/useRecommendations";
 import { useChat } from "@/hooks/useChat";
@@ -47,6 +48,12 @@ export default function Home() {
       {/* ── Left pane — chat ───────────────────────────────────────────── */}
       <aside className="scroll-pane shrink-0 flex flex-col border-b border-[#DADCE0] bg-[#F8F9FA] px-6 py-6 dark:border-[#3C4043] dark:bg-[#202124] lg:w-3/5 lg:overflow-y-auto lg:border-b-0 lg:border-r">
 
+        {/* Sticky arsenal banner — sits at the very top of the scrollable pane */}
+        <ActiveArsenalBanner
+          cards={viewedArsenal}
+          onClick={() => setArsenalOpen(true)}
+        />
+
         <ProfileSwitcher />
 
         <div className="mt-5 flex-1">
@@ -57,16 +64,6 @@ export default function Home() {
             onSendMessage={sendMessage}
           />
         </div>
-
-        {/* Re-open Arsenal button — shown after modal has been closed */}
-        {viewedArsenal.length > 0 && !arsenalOpen && (
-          <button
-            onClick={() => setArsenalOpen(true)}
-            className="mt-4 w-full rounded-xl border border-[#DADCE0] bg-white py-3 text-[13px] font-medium text-[#202124] transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:bg-[#292A2D] dark:text-[#E8EAED] dark:hover:bg-[#3C4043]"
-          >
-            View Your Card Arsenal →
-          </button>
-        )}
       </aside>
 
       {/* ── Right pane — live profile summary ─────────────────────────── */}

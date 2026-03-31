@@ -150,7 +150,7 @@ RULES:
    a JSON object summarizing all information gathered SO FAR. Use null for unknown fields.
 6. When you have gathered sufficient information (after at least 6 turns), tell the user you're
    ready to find their best cards. In that final message, include BOTH an <extracted_data> block
-   AND a <recommendation_data> block with the same completed JSON. This signals completion.
+   AND a <recommendation_data> block. This signals completion.
 
 EXACT OUTPUT FORMAT FOR EVERY MESSAGE:
 [Your friendly message text here]
@@ -197,6 +197,53 @@ FIELD RULES:
   spending nulls → 0, rewardType null → "both", feePreference null → "include_fee",
   institutions null → [], networks null → ["visa","mastercard","amex"],
   boolean nulls → false, income/score nulls stay null
+
+FINAL MESSAGE <recommendation_data> FORMAT:
+The <recommendation_data> block must include all spending/filter fields (with defaults applied)
+PLUS these two additional fields:
+
+"showArsenal": true
+
+"cardInsights": an array of up to 5 objects, each with "cardName" and "insight".
+  - cardName must be the EXACT name of a card from the Canadian catalog below.
+  - insight is 1–2 sentences explaining why this card suits THIS specific user's profile
+    (reference their actual spend categories, income tier, or stated preferences).
+  - Choose cards that best match the user's reward preference, fee tolerance, and top spend categories.
+
+CANADIAN CARD CATALOG (use exact names):
+Amex Cobalt, Amex Gold Rewards, Amex Platinum, Amex SimplyCash Preferred, Amex SimplyCash,
+Amex AIR MILES, Amex Green, Amex Blue Sky,
+Scotiabank Gold American Express, Scotiabank Scene+ Visa, Scotiabank Passport Visa Infinite,
+Scotiabank American Express, Scotiabank Value Visa,
+TD Cash Back Visa Infinite, TD Rewards Visa, TD Aeroplan Visa Infinite, TD First Class Travel Visa Infinite,
+RBC Avion Visa Infinite, RBC Cash Back Mastercard, RBC Rewards+ Visa, RBC WestJet World Elite Mastercard,
+BMO CashBack World Elite Mastercard, BMO Ascend World Elite Mastercard, BMO Rewards Mastercard,
+CIBC Dividend Visa Infinite, CIBC Aventura Gold Visa Infinite, CIBC Aeroplan Visa Infinite,
+National Bank World Elite Mastercard, National Bank Syncro Mastercard,
+Desjardins Cash Back Mastercard, Desjardins Odyssey World Elite Mastercard,
+Rogers World Elite Mastercard, Rogers Mastercard,
+PC Financial Mastercard, PC Financial World Elite Mastercard,
+Wealthsimple Cash Visa Prepaid,
+Home Trust Preferred Visa, Manulife Simplii Financial Cash Back Visa,
+Meridian Visa Cash Back, ATB World Elite Mastercard, EQ Bank Card,
+MBNA Rewards World Elite Mastercard, MBNA True Line Mastercard,
+Fido Mastercard, Canadian Tire Triangle Mastercard, Canadian Tire Triangle World Elite Mastercard
+
+Example <recommendation_data> structure:
+<recommendation_data>
+{
+  "showArsenal": true,
+  "cardInsights": [
+    {"cardName": "Amex Cobalt", "insight": "Your $500/mo grocery spend earns 5x points here — the highest multiplier in our catalog for everyday groceries."},
+    {"cardName": "Scotiabank Gold American Express", "insight": "Covers your dining and streaming at 3x Scene+ points with no foreign transaction fee for your travel spend."}
+  ],
+  "spending": { ... },
+  "filters": { ... },
+  "annualIncome": null,
+  "householdIncome": null,
+  "estimatedCreditScore": null
+}
+</recommendation_data>
         """.trimIndent()
     }
 }

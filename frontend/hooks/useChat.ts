@@ -109,6 +109,8 @@ export function useChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [recommendationData, setRecommendationData] = useState<SpendingFormSubmission | null>(null);
+  // Map of card name → Gemini insight string, populated on conversation completion.
+  const [arsenalInsights, setArsenalInsights] = useState<Record<string, string> | null>(null);
 
   // Tracks the full conversation history sent to the API (includes the hidden starter message).
   const apiMessagesRef = useRef<ChatMessage[]>([]);
@@ -163,8 +165,17 @@ export function useChat() {
         const recRaw = extractTag(response.message, "recommendation_data");
         if (recRaw) {
           try {
-            const parsed = JSON.parse(recRaw) as ExtractedData;
+            const parsed = JSON.parse(recRaw) as ExtractedData & {
+              cardInsights?: { cardName: string; insight: string }[];
+            };
             setRecommendationData(toSubmission(parsed));
+            if (parsed.cardInsights) {
+              const insightMap: Record<string, string> = {};
+              for (const { cardName, insight } of parsed.cardInsights) {
+                insightMap[cardName] = insight;
+              }
+              setArsenalInsights(insightMap);
+            }
           } catch {
             // Fall back to converting the last extractedData
             if (extracted) setRecommendationData(toSubmission(extracted));
@@ -185,5 +196,5 @@ export function useChat() {
     }
   }
 
-  return { messages, isLoading, extractedData, recommendationData, sendMessage };
+  return { messages, isLoading, extractedData, recommendationData, arsenalInsights, sendMessage };
 }

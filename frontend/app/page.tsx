@@ -1,14 +1,41 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 import ChatPanel from "@/app/components/ChatPanel";
 import LiveProfileSidebar from "@/app/components/LiveProfileSidebar";
+import ArsenalModal from "@/app/components/ArsenalModal";
 import { useProfile } from "@/context/ProfileContext";
+import { useRecommendations } from "@/hooks/useRecommendations";
 import { useChat } from "@/hooks/useChat";
+import type { RecommendationResult } from "@/lib/api";
 
 export default function Home() {
   const { activeProfile } = useProfile();
-  const { messages, isLoading: isChatLoading, extractedData, recommendationData, sendMessage } = useChat();
+  const { results, isCalculating, calculate } = useRecommendations();
+  const { messages, isLoading: isChatLoading, extractedData, recommendationData, arsenalInsights, sendMessage } = useChat();
+
+  const [arsenalOpen, setArsenalOpen] = useState(false);
+  const [viewedArsenal, setViewedArsenal] = useState<RecommendationResult[]>([]);
+
+  // When Gemini completes, auto-fetch recommendations and open the Arsenal.
+  useEffect(() => {
+    if (recommendationData) {
+      calculate(recommendationData);
+    }
+  }, [recommendationData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Open the Arsenal modal once results arrive from a chat-triggered calculation.
+  useEffect(() => {
+    if (results.length > 0 && recommendationData && !isCalculating) {
+      setArsenalOpen(true);
+    }
+  }, [results, isCalculating]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleCloseArsenal() {
+    setArsenalOpen(false);
+    setViewedArsenal(results);
+  }
 
   return (
     /*
@@ -25,11 +52,21 @@ export default function Home() {
         <div className="mt-5 flex-1">
           <ChatPanel
             messages={messages}
-            isLoading={isChatLoading}
+            isLoading={isChatLoading || isCalculating}
             isDone={!!recommendationData}
             onSendMessage={sendMessage}
           />
         </div>
+
+        {/* Re-open Arsenal button — shown after modal has been closed */}
+        {viewedArsenal.length > 0 && !arsenalOpen && (
+          <button
+            onClick={() => setArsenalOpen(true)}
+            className="mt-4 w-full rounded-xl border border-[#DADCE0] bg-white py-3 text-[13px] font-medium text-[#202124] transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:bg-[#292A2D] dark:text-[#E8EAED] dark:hover:bg-[#3C4043]"
+          >
+            View Your Card Arsenal →
+          </button>
+        )}
       </aside>
 
       {/* ── Right pane — live profile summary ─────────────────────────── */}
@@ -39,6 +76,15 @@ export default function Home() {
           activeProfile={activeProfile}
         />
       </main>
+
+      {/* ── Arsenal Modal ──────────────────────────────────────────────── */}
+      {arsenalOpen && results.length > 0 && (
+        <ArsenalModal
+          results={results}
+          insights={arsenalInsights ?? {}}
+          onClose={handleCloseArsenal}
+        />
+      )}
     </div>
   );
 }

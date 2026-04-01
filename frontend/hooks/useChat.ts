@@ -41,6 +41,13 @@ export interface ExtractedData {
   estimatedCreditScore: number | null;
 }
 
+// A single card in the Arsenal with Gemini-authored purpose and description.
+export interface ArsenalCard {
+  name: string;
+  purpose: string;
+  description: string;
+}
+
 function extractTag(text: string, tag: string): string | null {
   const match = text.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`));
   return match ? match[1].trim() : null;
@@ -109,8 +116,9 @@ export function useChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [recommendationData, setRecommendationData] = useState<SpendingFormSubmission | null>(null);
-  // Map of card name → Gemini insight string, populated on conversation completion.
-  const [arsenalInsights, setArsenalInsights] = useState<Record<string, string> | null>(null);
+  const [arsenalCards, setArsenalCards] = useState<ArsenalCard[]>([]);
+  // When true, re-enables the chat input even after recommendationData is set (exit loop).
+  const [forceOpen, setForceOpen] = useState(false);
 
   // Tracks the full conversation history sent to the API (includes the hidden starter message).
   const apiMessagesRef = useRef<ChatMessage[]>([]);
@@ -154,6 +162,9 @@ export function useChat() {
     apiMessagesRef.current = newApiMessages;
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
+    // If the user sends a new message after the exit loop, close forceOpen
+    // so isDone re-triggers if Gemini produces another recommendation_data.
+    setForceOpen(false);
 
     try {
       const response = await sendChatMessage(newApiMessages);
@@ -166,15 +177,24 @@ export function useChat() {
         if (recRaw) {
           try {
             const parsed = JSON.parse(recRaw) as ExtractedData & {
+              cards?: { name: string; purpose: string; description: string }[];
               cardInsights?: { cardName: string; insight: string }[];
             };
             setRecommendationData(toSubmission(parsed));
-            if (parsed.cardInsights) {
-              const insightMap: Record<string, string> = {};
-              for (const { cardName, insight } of parsed.cardInsights) {
-                insightMap[cardName] = insight;
-              }
-              setArsenalInsights(insightMap);
+
+            if (parsed.cards && parsed.cards.length > 0) {
+              setArsenalCards(parsed.cards.map(c => ({
+                name: c.name,
+                purpose: c.purpose ?? "",
+                description: c.description ?? "",
+              })));
+            } else if (parsed.cardInsights && parsed.cardInsights.length > 0) {
+              // Backwards-compat: old cardInsights format
+              setArsenalCards(parsed.cardInsights.map(c => ({
+                name: c.cardName,
+                purpose: "",
+                description: c.insight,
+              })));
             }
           } catch {
             // Fall back to converting the last extractedData
@@ -196,5 +216,14 @@ export function useChat() {
     }
   }
 
-  return { messages, isLoading, extractedData, recommendationData, arsenalInsights, sendMessage };
+  // Inject a bot message into the visible chat and re-enable the input.
+  // Used by the exit loop when the Arsenal modal is closed.
+  function addBotMessage(text: string) {
+    setMessages(prev => [...prev, { role: "model", content: text }]);
+    setForceOpen(true);
+  }
+
+  const isDone = !forceOpen && !!recommendationData;
+
+  return { messages, isLoading, extractedData, recommendationData, arsenalCards, isDone, sendMessage, addBotMessage };
 }

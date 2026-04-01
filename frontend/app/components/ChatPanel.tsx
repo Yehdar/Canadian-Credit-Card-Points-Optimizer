@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CreditCard } from "lucide-react";
 import type { ChatMessage } from "@/lib/api";
 
 interface ChatPanelProps {
@@ -8,9 +9,11 @@ interface ChatPanelProps {
   isLoading: boolean;
   isDone: boolean;
   onSendMessage: (text: string) => void;
+  hasCards?: boolean;
+  onViewCards?: () => void;
 }
 
-export default function ChatPanel({ messages, isLoading, isDone, onSendMessage }: ChatPanelProps) {
+export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, hasCards, onViewCards }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -39,14 +42,25 @@ export default function ChatPanel({ messages, isLoading, isDone, onSendMessage }
     <div className="flex flex-col rounded-xl border border-[#DADCE0] bg-white dark:border-[#3C4043] dark:bg-[#2D2E30]">
 
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-[#DADCE0] px-4 py-3 dark:border-[#3C4043]">
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1A73E8] text-[11px] font-bold text-white">
-          CG
+      <div className="flex items-center justify-between gap-2 border-b border-[#DADCE0] px-4 py-3 dark:border-[#3C4043]">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1A73E8] text-[11px] font-bold text-white">
+            CG
+          </div>
+          <div>
+            <p className="text-[13px] font-semibold text-[#202124] dark:text-[#E8EAED]">CardGenius</p>
+            <p className="text-[11px] text-[#5F6368] dark:text-[#9AA0A6]">AI Card Advisor</p>
+          </div>
         </div>
-        <div>
-          <p className="text-[13px] font-semibold text-[#202124] dark:text-[#E8EAED]">CardGenius</p>
-          <p className="text-[11px] text-[#5F6368] dark:text-[#9AA0A6]">AI Card Advisor</p>
-        </div>
+        {hasCards && onViewCards && (
+          <button
+            onClick={onViewCards}
+            className="flex items-center gap-1.5 rounded-lg border border-[#DADCE0] px-2.5 py-1.5 text-[11px] font-medium text-[#5F6368] transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
+          >
+            <CreditCard className="h-3.5 w-3.5" />
+            View Credit Cards
+          </button>
+        )}
       </div>
 
       {/* Message list */}

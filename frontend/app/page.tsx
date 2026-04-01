@@ -5,7 +5,6 @@ import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 import ChatPanel from "@/app/components/ChatPanel";
 import LiveProfileSidebar from "@/app/components/LiveProfileSidebar";
 import ArsenalModal from "@/app/components/ArsenalModal";
-import ActiveArsenalBanner from "@/app/components/ActiveArsenalBanner";
 import { useProfile } from "@/context/ProfileContext";
 import { useRecommendations } from "@/hooks/useRecommendations";
 import { useChat } from "@/hooks/useChat";
@@ -14,22 +13,6 @@ import type { RecommendationResult } from "@/lib/api";
 // Dev-only mock data for the Arsenal skip tool.
 const DEV_MOCK_RESULTS: RecommendationResult[] = [
   {
-    card: { id: 999, name: "PC Financial Mastercard", issuer: "PC Financial", annualFee: 0, pointsCurrency: "PC Optimum", cardType: "mastercard", isPointsBased: true },
-    breakdown: [{ category: "groceries", spent: 6000, pointsEarned: 60000, valueCAD: 90 }],
-    totalPointsEarned: 60000,
-    totalValueCAD: 90,
-    netAnnualValue: 90,
-    eligibilityWarning: undefined,
-  },
-  {
-    card: { id: 998, name: "CIBC Dividend Visa Infinite", issuer: "CIBC", annualFee: 120, pointsCurrency: "Cash Back", cardType: "visa", isPointsBased: false },
-    breakdown: [{ category: "dining", spent: 3600, pointsEarned: 0, valueCAD: 72 }, { category: "gas", spent: 1200, pointsEarned: 0, valueCAD: 24 }],
-    totalPointsEarned: 0,
-    totalValueCAD: 144,
-    netAnnualValue: 24,
-    eligibilityWarning: undefined,
-  },
-  {
     card: { id: 997, name: "Wealthsimple Cash Visa Prepaid", issuer: "Wealthsimple", annualFee: 0, pointsCurrency: "Cash Back", cardType: "visa", isPointsBased: false },
     breakdown: [{ category: "other", spent: 2400, pointsEarned: 0, valueCAD: 24 }],
     totalPointsEarned: 0,
@@ -37,12 +20,28 @@ const DEV_MOCK_RESULTS: RecommendationResult[] = [
     netAnnualValue: 24,
     eligibilityWarning: undefined,
   },
+  {
+    card: { id: 998, name: "RBC Avion Visa Infinite", issuer: "RBC", annualFee: 120, pointsCurrency: "Avion Points", cardType: "visa", isPointsBased: true },
+    breakdown: [{ category: "travel", spent: 3600, pointsEarned: 7200, valueCAD: 108 }, { category: "dining", spent: 1200, pointsEarned: 1200, valueCAD: 18 }],
+    totalPointsEarned: 8400,
+    totalValueCAD: 126,
+    netAnnualValue: 6,
+    eligibilityWarning: undefined,
+  },
+  {
+    card: { id: 999, name: "Amex Platinum", issuer: "American Express", annualFee: 799, pointsCurrency: "Amex MR", cardType: "amex", isPointsBased: true },
+    breakdown: [{ category: "travel", spent: 6000, pointsEarned: 18000, valueCAD: 270 }, { category: "dining", spent: 3600, pointsEarned: 10800, valueCAD: 162 }, { category: "groceries", spent: 6000, pointsEarned: 6000, valueCAD: 90 }],
+    totalPointsEarned: 34800,
+    totalValueCAD: 522,
+    netAnnualValue: 222,
+    eligibilityWarning: undefined,
+  },
 ];
 
 const DEV_MOCK_ARSENAL_CARDS = [
-  { name: "PC Financial Mastercard", purpose: "The Grocery Powerhouse", description: "Earns 45 PC Optimum points per $1 at Loblaw stores — your primary earn engine for weekly grocery runs." },
-  { name: "CIBC Dividend Visa Infinite", purpose: "Dining & Gas Anchor", description: "4% cash back on dining and gas, covering your top discretionary categories with a solid return." },
-  { name: "Wealthsimple Cash Visa Prepaid", purpose: "The No-Fee Backup", description: "1% on everything else with zero annual fee — perfect for purchases that don't fit your other cards." },
+  { name: "Wealthsimple Cash Visa Prepaid", purpose: "The No-Fee Everyday Backup", description: "1% on everything with zero annual fee — seamless for any purchase that doesn't fit your other cards." },
+  { name: "RBC Avion Visa Infinite", purpose: "Travel & Points Engine", description: "2x Avion points on travel and a solid earn rate across the board — your go-to for bookings and dining out." },
+  { name: "Amex Platinum", purpose: "Premium Perks & Lounge Access", description: "The $799 fee pays for itself with unlimited Priority Pass lounge access, $200 travel credit, and top-tier MR earn rates." },
 ];
 
 export default function Home() {
@@ -51,7 +50,6 @@ export default function Home() {
   const { messages, isLoading: isChatLoading, extractedData, recommendationData, arsenalCards, isDone, sendMessage, addBotMessage } = useChat();
 
   const [arsenalOpen, setArsenalOpen] = useState(false);
-  const [viewedArsenal, setViewedArsenal] = useState<RecommendationResult[]>([]);
   const [devResults, setDevResults] = useState<RecommendationResult[] | null>(null);
 
   // When Gemini completes, auto-fetch recommendations and open the Arsenal.
@@ -70,7 +68,6 @@ export default function Home() {
 
   function handleCloseArsenal() {
     setArsenalOpen(false);
-    setViewedArsenal(devResults ?? results);
     addBotMessage("Want to keep chatting to better tailor your arsenal? I can swap out cards if these don't fit your vibe. 🎯");
   }
 
@@ -92,12 +89,6 @@ export default function Home() {
       {/* ── Left pane — chat ───────────────────────────────────────────── */}
       <aside className="scroll-pane shrink-0 flex flex-col border-b border-[#DADCE0] bg-[#F8F9FA] px-6 py-6 dark:border-[#3C4043] dark:bg-[#202124] lg:w-3/5 lg:overflow-y-auto lg:border-b-0 lg:border-r">
 
-        {/* Sticky arsenal banner — sits at the very top of the scrollable pane */}
-        <ActiveArsenalBanner
-          cards={viewedArsenal}
-          onClick={() => setArsenalOpen(true)}
-        />
-
         <ProfileSwitcher />
 
         <div className="mt-5 flex-1">
@@ -106,6 +97,8 @@ export default function Home() {
             isLoading={isChatLoading || isCalculating}
             isDone={isDone}
             onSendMessage={sendMessage}
+            hasCards={activeResults.length > 0}
+            onViewCards={() => setArsenalOpen(true)}
           />
         </div>
       </aside>
@@ -132,9 +125,9 @@ export default function Home() {
       {process.env.NODE_ENV === "development" && !arsenalOpen && (
         <button
           onClick={handleDevSkip}
-          className="fixed bottom-4 left-4 z-[60] rounded-lg bg-yellow-400 px-3 py-1.5 text-xs font-bold text-black shadow-lg transition hover:bg-yellow-300"
+          className="fixed bottom-4 left-4 z-[60] rounded-lg border border-[#DADCE0] bg-white px-3 py-1.5 text-xs font-medium text-[#5F6368] shadow-sm transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:bg-[#292A2D] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
         >
-          DEV ⚡ Skip to Arsenal
+          ⚡ dev: skip to arsenal
         </button>
       )}
     </div>

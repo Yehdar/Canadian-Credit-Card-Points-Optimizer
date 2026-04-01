@@ -6,24 +6,17 @@ import { PresentationControls, RoundedBox, Environment } from "@react-three/drei
 import type { Mesh } from "three";
 
 const CARD_COLORS: Record<string, string> = {
-  visa:       "#1A237E",
+  visa:       "#0051A5",
   mastercard: "#7B1C1C",
   amex:       "#2E5339",
 };
 
-const CARD_COLORS_SECONDARY: Record<string, string> = {
-  visa:       "#3949AB",
-  mastercard: "#C62828",
-  amex:       "#388E3C",
-};
-
 interface CardMeshProps {
-  cardType: string;
+  color: string;
 }
 
-function CardMesh({ cardType }: CardMeshProps) {
+function CardMesh({ color }: CardMeshProps) {
   const meshRef = useRef<Mesh>(null!);
-  const color = CARD_COLORS[cardType] ?? "#1A1A2E";
 
   useFrame((_, delta) => {
     meshRef.current.rotation.y += delta * 0.4;
@@ -59,17 +52,20 @@ interface ThreeDCardProps {
   cardType: "visa" | "mastercard" | "amex";
   cardName: string;
   issuer: string;
+  color?: string; // overrides the cardType default
 }
 
-export default function ThreeDCard({ cardType }: ThreeDCardProps) {
+export default function ThreeDCard({ cardType, color }: ThreeDCardProps) {
+  const resolvedColor = color ?? CARD_COLORS[cardType] ?? "#1A1A2E";
+
   return (
     <div className="h-full w-full">
       <Canvas camera={{ position: [0, 0, 2.5], fov: 40 }}>
-        <ambientLight intensity={0.3} />
-        <spotLight position={[0, 3, 3]} intensity={2.5} penumbra={0.5} />
-        <pointLight position={[0, -2, 1]} intensity={0.8} color="#00FFD4" />
-        <pointLight position={[-2, 1, 1]} intensity={0.4} color={CARD_COLORS_SECONDARY[cardType] ?? "#fff"} />
-        <CardMesh cardType={cardType} />
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[3, 3, 3]} intensity={1.8} />
+        <directionalLight position={[-3, 1, 2]} intensity={0.6} color="#F0F0F0" />
+        <spotLight position={[0, 4, 2]} intensity={1.5} penumbra={1} />
+        <CardMesh color={resolvedColor} />
         <Environment preset="city" />
       </Canvas>
     </div>

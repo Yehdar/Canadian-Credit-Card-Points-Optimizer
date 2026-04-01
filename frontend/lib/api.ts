@@ -126,7 +126,7 @@ export async function deleteProfile(id: number): Promise<void> {
   if (!res.ok) throw new Error(`Failed to delete profile: ${res.status}`);
 }
 
-// ── Chat ──────────────────────────────────────────────────────────────────────
+// ── Chat / Optimizer ──────────────────────────────────────────────────────────
 
 export interface ChatMessage {
   role: "user" | "model";
@@ -138,13 +138,23 @@ export interface ChatResponse {
   isDone: boolean;
 }
 
-export async function sendChatMessage(messages: ChatMessage[]): Promise<ChatResponse> {
+/** Shape sent to POST /api/chat for single-shot card optimization. */
+export interface OptimizeRequest {
+  strategy: string;           // "simple" | "arsenal"
+  spending: SpendingBreakdown;
+  filters: FormFilters;
+  annualIncome?: number;
+  householdIncome?: number;
+  estimatedCreditScore?: number;
+}
+
+export async function sendOptimizeRequest(request: OptimizeRequest): Promise<ChatResponse> {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify(request),
   });
-  if (!res.ok) throw new Error(`Chat request failed: ${res.status}`);
+  if (!res.ok) throw new Error(`Optimize request failed: ${res.status}`);
   return res.json();
 }
 

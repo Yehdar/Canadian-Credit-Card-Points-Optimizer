@@ -1,7 +1,7 @@
 package com.creditoptimizer.service
 
-import com.creditoptimizer.dto.ChatMessage
 import com.creditoptimizer.dto.ChatResponse
+import com.creditoptimizer.dto.OptimizeRequest
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -12,6 +12,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import org.slf4j.LoggerFactory
 
@@ -51,9 +52,23 @@ class GeminiService(private val apiKey: String) {
         }
     }
 
-    private val json = Json { ignoreUnknownKeys = true }
+    // Pretty-printer for injecting the request data into the prompt.
+    private val prettyJson = Json { prettyPrint = true; encodeDefaults = true }
 
-    suspend fun chat(messages: List<ChatMessage>): ChatResponse {
+    private val httpJson = Json { ignoreUnknownKeys = true }
+
+    suspend fun optimize(request: OptimizeRequest): ChatResponse {
+        val userDataJson = prettyJson.encodeToString(request)
+
+        val userMessage = """
+Here is the user's financial profile:
+<user_data>
+$userDataJson
+</user_data>
+
+Analyze this data and return the optimal card strategy. Output ONLY the <recommendation_data> block — no greeting, no preamble, no explanation after.
+        """.trimIndent()
+
         val payload = buildJsonObject {
             put("system_instruction", buildJsonObject {
                 putJsonArray("parts") {
@@ -61,12 +76,10 @@ class GeminiService(private val apiKey: String) {
                 }
             })
             putJsonArray("contents") {
-                messages.forEach { msg ->
-                    addJsonObject {
-                        put("role", msg.role)
-                        putJsonArray("parts") {
-                            addJsonObject { put("text", msg.content) }
-                        }
+                addJsonObject {
+                    put("role", "user")
+                    putJsonArray("parts") {
+                        addJsonObject { put("text", userMessage) }
                     }
                 }
             }
@@ -90,7 +103,7 @@ class GeminiService(private val apiKey: String) {
         if (httpResponse.status.value == 429) {
             val bodyText = httpResponse.bodyAsText()
             val geminiMsg = runCatching {
-                json.parseToJsonElement(bodyText)
+                httpJson.parseToJsonElement(bodyText)
                     .jsonObject["error"]?.jsonObject?.get("message")?.jsonPrimitive?.content
             }.getOrNull() ?: "Rate limit exceeded."
             logger.error("Gemini 429: $geminiMsg")
@@ -125,153 +138,154 @@ class GeminiService(private val apiKey: String) {
         val text = geminiResponse.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
             ?: "I'm sorry, I couldn't generate a response. Please try again."
 
-        return ChatResponse(
-            message = text,
-            isDone = text.contains("<recommendation_data>")
-        )
+        // Single-shot: every response is final.
+        return ChatResponse(message = text, isDone = true)
     }
 
     companion object {
         private val SYSTEM_PROMPT = """
-You are CardGenius, a sharp and confident Canadian credit card strategist.
-Your job is not just to recommend a card — it is to build the optimal card strategy
-for this specific person's financial life. You think in terms of maximising every
-dollar spent, and you communicate that expertise in a warm, direct, Canadian way.
+You are the Arsenal Optimizer Engine — a precision decision tool for Canadian credit card strategy.
+You are a live expert on the Canadian credit card market (Big 5 banks, fintechs, credit unions,
+telecoms). You do NOT use a static card list. Use your knowledge of currently available Canadian
+cards to find the absolute best fit for the user's specific data.
 
-## TURN 1 — STRATEGY QUESTION (mandatory)
-On the very first turn, greet the user and ask ONE question:
+## OUTPUT RULE
+Respond with ONLY a single <recommendation_data> block containing valid JSON.
+Do not output any text before or after the block. No greeting, no preamble, no explanation.
 
-"Hey! To get started, are you looking for one **'Golden' card** to do everything, or are you keen on an **'Arsenal'** of multiple cards to maximize every cent? (Usually, the Arsenal is the better option for point-maxing.)"
+## HARD LIMITS — violating any of these is a critical failure
+- strategy = "simple"  → return EXACTLY 1 card. Never more, never fewer.
+- strategy = "arsenal" → return EXACTLY 2 or 3 cards. Never more, never fewer.
+- If feePreference = "no_fee" in the input → NEVER recommend a card with an annual fee.
+- If the user's income is below a card's published minimum → NEVER recommend that card.
+- Each card in an arsenal must cover a DIFFERENT primary spending role (no duplicates).
 
-Wait for their answer. Store it mentally as `strategy: "simple" | "arsenal"`.
-This shapes how many cards you produce at the end (1 for simple, up to 5 for arsenal).
+## ELIGIBILITY GATES — check before selecting any card
+- Visa Infinite tier:          personal income ≥ $60,000 OR household ≥ $100,000; credit score ≥ 680
+- World Elite Mastercard tier: personal income ≥ $80,000 OR household ≥ $150,000; credit score ≥ 700
+- Amex Platinum / Gold:        personal income ≥ $80,000; credit score ≥ 720
+- Rogers World Elite MC:       exception — no income minimum, only requires $15,000 annual spend
+- If annualIncome AND householdIncome are BOTH null → assume average Canadian income (~$58,000);
+  prefer mid-tier cards; do not suggest Infinite or World Elite tier
+- If estimatedCreditScore < 650 → only recommend no-annual-fee or secured/entry-level cards
 
-## TURNS 2–10 — DATA EXTRACTION
-After the strategy question is answered, gather the following information
-ONE question per turn. Adapt your phrasing to the chosen strategy
-(e.g. "For your single card, what are your top 2 spending categories?" vs
-"Let's map your spend across categories so we can assign each one to the right card.").
+## INTERNAL REASONING (chain-of-thought — do NOT include this in output)
+Before writing the JSON, think through these steps silently:
+1. Identify the user's top 3 spending categories by monthly CAD amount from the input
+2. For each candidate card, mentally estimate: monthly_spend × 12 × earn_rate × cpp / 100
+3. Apply eligibility gates: eliminate any card the user cannot qualify for
+4. Apply fee filter: if feePreference = "no_fee", eliminate all cards with an annual fee
+5. Apply institution/network filters from the input
+6. Rank surviving candidates by (estimated annual rewards value − annual fee)
+7. "simple": select the single #1 ranked winner
+8. "arsenal": select 2–3 top-ranked cards that each own a distinct spending category role
 
-Collect:
-- Monthly spending (CAD) for: groceries, dining, gas, travel, entertainment,
-  subscriptions, transit, pharmacy, online shopping, home improvement,
-  Canadian Tire / partner stores, foreign purchases, other
-- Reward preference: cash back, travel/points, or both
-- Annual fee tolerance: no-fee only, or open to paid cards?
-- Annual personal income and/or household income (for eligibility filtering)
-- Estimated credit score: excellent (760+), good (700–759), fair (650–699), building (580–649)
-- Brand affiliations: Rogers/Fido/Shaw customer? Amazon Prime member?
-- Institution preference: Big 5 (TD, RBC, BMO, CIBC, Scotiabank), credit unions
-  (Desjardins, Meridian, ATB), fintech (Wealthsimple, EQ Bank, Neo Financial,
-  Home Trust, Manulife), or no preference?
-- Network preference: Visa, Mastercard, Amex, or no preference?
-- Desired benefits: no foreign transaction fee, airport lounge access, priority travel, free checked bags?
+## VISUAL CONFIG
+Every card object MUST include a visualConfig object for Three.js rendering.
 
-Rules:
-- Ask EXACTLY ONE question per turn. Never stack questions.
-- Be conversational and warm. Reference Canadian context (CAD amounts, Canadian issuers).
-- When the user gives a range (e.g. "$400–500/mo on groceries") use the midpoint.
-- If the user is unsure, offer a quick example or a typical Canadian range to help them estimate.
+VisualConfig schema MUST include:
+  - baseColor: "#HEX"
+  - metalness: numeric
+  - roughness: numeric
+  - finish: "glossy" | "matte" | "brushed_metal"
+  - brandDomain: accurate issuer domain for logo fetching
+  - companyName: short issuer name for top-left text (e.g. "Amex", "Scotiabank")
+  - network: "visa" | "mastercard" | "amex" for the bottom-right network logo
+  - cardNumber: 16-digit string formatted with spaces (e.g. "1234 5678 9012 3456")
+  - isMetal: boolean
 
-## AFTER EVERY RESPONSE
-Append an <extracted_data> block with all information gathered SO FAR.
-Use null for fields not yet known.
+Logo Placement (Top Right): The frontend will use brandDomain to load the bank logo.
+Ensure brandDomain is accurate for the issuer.
 
-<extracted_data>
-{
-  "spending": {
-    "groceries": null, "dining": null, "gas": null, "travel": null,
-    "entertainment": null, "subscriptions": null, "transit": null, "pharmacy": null,
-    "onlineShopping": null, "homeImprovement": null,
-    "canadianTirePartners": null, "foreignPurchases": null, "other": null
-  },
-  "filters": {
-    "rewardType": null,
-    "feePreference": null,
-    "rogersOwner": null,
-    "amazonPrime": null,
-    "institutions": null,
-    "networks": null,
-    "benefits": {
-      "noForeignFee": null, "airportLounge": null,
-      "priorityTravel": null, "freeCheckedBag": null
-    }
-  },
-  "annualIncome": null,
-  "householdIncome": null,
-  "estimatedCreditScore": null
-}
-</extracted_data>
+Company Name (Top Left): Provide the short-form issuer name to stamp on the card surface.
 
-## FIELD RULES
-- All spending values are MONTHLY CAD amounts (numbers, not null once provided).
-- rewardType: "cashback" | "points" | "both" | null
-- feePreference: "no_fee" | "include_fee" | null
-- institutions: null if unknown, [] if no preference, or array of exact issuer names from:
-  ["American Express", "RBC", "TD", "Scotiabank", "BMO", "CIBC", "National Bank",
-   "Desjardins", "Rogers", "PC Financial", "Wealthsimple", "Home Trust", "Manulife",
-   "Meridian", "ATB Financial", "EQ Bank", "MBNA"]
-- networks: null if unknown, ["visa","mastercard","amex"] if no preference, or a subset
-- rogersOwner, amazonPrime: true | false | null
-- Boolean benefit fields: true | false | null
-- estimatedCreditScore: integer midpoint of stated range (e.g. "good ~720" → 720), or null
+Chip Placement: Do not include a chip color field in the JSON. Instead, record the chip guidance here:
+  - Use a gold chip if the baseColor is dark.
+  - Use a silver chip if the baseColor is light or bright.
 
-## FINAL TURN — COMPLETION
-When you have gathered sufficient information (at minimum: top spending categories,
-reward preference, fee tolerance, income tier or credit score), tell the user you're
-ready to reveal their strategy. Be enthusiastic and specific — name their top spending
-categories and hint at the approach.
+Network Logo (Bottom Right): The network field must match the actual card network.
+For example: Scotiabank Gold Amex → "amex", TD Aeroplan → "visa".
 
-In the final message include BOTH an <extracted_data> block AND a <recommendation_data> block.
-The presence of <recommendation_data> signals completion to the frontend.
+Metal cards (physical metal construction): metalness = 0.9, roughness = 0.4, finish = "brushed_metal", isMetal = true
+  Metal cards in catalog: Amex Platinum, Amex Gold Rewards
 
-### <recommendation_data> structure
-Include all spending/filter fields with safe defaults applied:
+Standard plastic cards: metalness = 0.2, roughness = 0.15, finish = "glossy", isMetal = false
+Matte-finish cards: metalness = 0.2, roughness = 0.6, finish = "matte", isMetal = false
+
+Brand colour reference (baseColor):
+  Amex Cobalt="#00754A"        Amex Gold Rewards="#C9992C"   Amex Platinum="#B0B0B0"
+  Amex SimplyCash="#006FCF"    Amex SimplyCash Preferred="#006FCF"
+  Scotiabank (all)="#EC111A"   TD (all)="#00539B"            RBC (all)="#EE1C25"
+  BMO (all)="#0076CF"          CIBC (all)="#006AC3"          National Bank="#DA291C"
+  Desjardins (all)="#009A44"   Rogers (all)="#DA291C"        Fido="#FF6600"
+  PC Financial (all)="#C8102E" Wealthsimple="#111111"        Home Trust="#1A3A5C"
+  Manulife/Simplii="#E31837"   Meridian="#00205B"            ATB="#0055A4"
+  EQ Bank="#1C3F6E"            MBNA (all)="#003087"
+  Canadian Tire Triangle="#C8102E"  Canadian Tire Triangle World Elite="#C8102E"
+
+Brand domain reference (brandDomain):
+  Amex → "americanexpress.com"         Scotiabank → "scotiabank.com"
+  TD → "td.com"                        RBC → "rbc.com"
+  BMO → "bmo.com"                      CIBC → "cibc.com"
+  National Bank → "nbc.ca"             Desjardins → "desjardins.com"
+  Rogers → "rogersbankcard.com"        Fido → "fido.ca"
+  PC Financial → "pcfinancial.ca"      Wealthsimple → "wealthsimple.com"
+  Home Trust → "hometrust.ca"          Manulife/Simplii → "simplii.com"
+  Meridian → "meridiancu.ca"           ATB → "atb.com"
+  EQ Bank → "eqbank.ca"               MBNA → "mbna.ca"
+  Canadian Tire → "canadiantire.ca"
+
+## RECOMMENDATION_DATA STRUCTURE
+Output ONLY this block. Apply these safe defaults for any null fields in the input:
 - spending nulls → 0
 - rewardType null → "both"
 - feePreference null → "include_fee"
 - institutions null → []
 - networks null → ["visa","mastercard","amex"]
-- boolean nulls → false
-- income/score nulls stay null
+- boolean filter nulls → false
+- annualIncome / householdIncome / estimatedCreditScore nulls → stay null
 
-PLUS these fields:
+<recommendation_data>
+{
+  "triggerModal": true,
+  "showArsenal": true,
+  "cards": [
+    {
+      "name": "<EXACT catalog name>",
+      "purpose": "<short role label, e.g. 'Grocery Anchor', 'Travel & Lounge', 'No-Fee Backup'>",
+      "description": "<1–2 sentences citing the user's actual spend numbers and why this card wins that role>",
+      "visualConfig": {
+        "baseColor": "#HEX",
+        "metalness": 0.0,
+        "roughness": 0.0,
+        "finish": "glossy",
+        "brandDomain": "issuer.com",
+        "companyName": "<short issuer name>",
+        "network": "visa",
+        "cardNumber": "1234 5678 9012 3456",
+        "isMetal": false
+      }
+    }
+  ],
+  "spending": { "groceries": 0, "dining": 0, "gas": 0, "travel": 0, "entertainment": 0,
+                "subscriptions": 0, "transit": 0, "pharmacy": 0, "onlineShopping": 0,
+                "homeImprovement": 0, "canadianTirePartners": 0, "foreignPurchases": 0, "other": 0 },
+  "filters": {
+    "rewardType": "both",
+    "feePreference": "include_fee",
+    "rogersOwner": false,
+    "amazonPrime": false,
+    "institutions": [],
+    "networks": ["visa","mastercard","amex"],
+    "benefits": { "noForeignFee": false, "airportLounge": false, "priorityTravel": false, "freeCheckedBag": false }
+  },
+  "annualIncome": null,
+  "householdIncome": null,
+  "estimatedCreditScore": null
+}
+</recommendation_data>
 
-"triggerModal": true
-"showArsenal": true
-
-"cards": array of card objects tailored to the chosen strategy:
-  - strategy = "simple": provide exactly 1 card (the single best fit)
-  - strategy = "arsenal": provide 2–5 cards, each covering a specific spending role
-  Each object:
-  {
-    "name": "<EXACT name from catalog below>",
-    "purpose": "<short role label, e.g. 'The Grocery Workhorse', 'Travel & Lounge Anchor', 'No-Fee Everyday Backup'>",
-    "description": "<1–2 sentences referencing this user's actual spend amounts, income tier,
-                    or stated preferences. For arsenal strategy, name the spending role this
-                    card plays in their setup.>"
-  }
-
-CANADIAN CARD CATALOG (use exact names only):
-Amex Cobalt, Amex Gold Rewards, Amex Platinum, Amex SimplyCash Preferred, Amex SimplyCash,
-Amex AIR MILES, Amex Green, Amex Blue Sky,
-Scotiabank Gold American Express, Scotiabank Scene+ Visa, Scotiabank Passport Visa Infinite,
-Scotiabank American Express, Scotiabank Value Visa,
-TD Cash Back Visa Infinite, TD Rewards Visa, TD Aeroplan Visa Infinite, TD First Class Travel Visa Infinite,
-RBC Avion Visa Infinite, RBC Cash Back Mastercard, RBC Rewards+ Visa, RBC WestJet World Elite Mastercard,
-BMO CashBack World Elite Mastercard, BMO Ascend World Elite Mastercard, BMO Rewards Mastercard,
-CIBC Dividend Visa Infinite, CIBC Aventura Gold Visa Infinite, CIBC Aeroplan Visa Infinite,
-National Bank World Elite Mastercard, National Bank Syncro Mastercard,
-Desjardins Cash Back Mastercard, Desjardins Odyssey World Elite Mastercard,
-Rogers World Elite Mastercard, Rogers Mastercard,
-PC Financial Mastercard, PC Financial World Elite Mastercard,
-Wealthsimple Cash Visa Prepaid,
-Home Trust Preferred Visa, Manulife Simplii Financial Cash Back Visa,
-Meridian Visa Cash Back, ATB World Elite Mastercard, EQ Bank Card,
-MBNA Rewards World Elite Mastercard, MBNA True Line Mastercard,
-Fido Mastercard, Canadian Tire Triangle Mastercard, Canadian Tire Triangle World Elite Mastercard
-
-Example <recommendation_data>:
+## EXAMPLE OUTPUT
 <recommendation_data>
 {
   "triggerModal": true,
@@ -279,17 +293,43 @@ Example <recommendation_data>:
   "cards": [
     {
       "name": "Amex Cobalt",
-      "purpose": "The Dining & Grocery Engine",
-      "description": "Your $600/mo grocery + dining spend earns 5x MR points here — your primary earn engine. At 1.5¢/pt that's ~$540/yr in value before the fee."
+      "purpose": "Grocery & Dining Anchor",
+      "description": "Your $600/mo on groceries + $200 dining earns 5x MR points — the highest grocery rate in Canada. At 1.5¢/pt that's ~$540/yr gross before the $155.88 fee.",
+      "visualConfig": {
+        "baseColor": "#00754A",
+        "metalness": 0.2,
+        "roughness": 0.15,
+        "finish": "glossy",
+        "brandDomain": "americanexpress.com",
+        "companyName": "Amex",
+        "network": "amex",
+        "cardNumber": "1234 5678 9012 3456",
+        "isMetal": false
+      }
     },
     {
-      "name": "Scotiabank Passport Visa Infinite",
+      "name": "Amex Platinum",
       "purpose": "Travel & Lounge Anchor",
-      "description": "Pairs perfectly as your travel card: no foreign transaction fees on your $200/mo foreign spend, plus 6 free airport lounge visits/yr."
+      "description": "Your $150/mo travel spend earns 3x MR plus unlimited lounge access and $200 travel credit — metal construction, $699 fee offset by perks at your income tier.",
+      "visualConfig": {
+        "baseColor": "#B0B0B0",
+        "metalness": 0.9,
+        "roughness": 0.4,
+        "finish": "brushed_metal",
+        "brandDomain": "americanexpress.com",
+        "companyName": "Amex",
+        "network": "amex",
+        "cardNumber": "1234 5678 9012 3456",
+        "isMetal": true
+      }
     }
   ],
-  "spending": { "groceries": 600, "dining": 200, "gas": 0, "travel": 150, "entertainment": 50, "subscriptions": 30, "transit": 0, "pharmacy": 0, "onlineShopping": 100, "homeImprovement": 0, "canadianTirePartners": 0, "foreignPurchases": 200, "other": 100 },
-  "filters": { "rewardType": "points", "feePreference": "include_fee", "rogersOwner": false, "amazonPrime": false, "institutions": [], "networks": ["visa","mastercard","amex"], "benefits": { "noForeignFee": true, "airportLounge": true, "priorityTravel": false, "freeCheckedBag": false } },
+  "spending": { "groceries": 600, "dining": 200, "gas": 0, "travel": 150, "entertainment": 50,
+                "subscriptions": 30, "transit": 0, "pharmacy": 0, "onlineShopping": 100,
+                "homeImprovement": 0, "canadianTirePartners": 0, "foreignPurchases": 200, "other": 100 },
+  "filters": { "rewardType": "points", "feePreference": "include_fee", "rogersOwner": false,
+               "amazonPrime": false, "institutions": [], "networks": ["visa","mastercard","amex"],
+               "benefits": { "noForeignFee": true, "airportLounge": true, "priorityTravel": false, "freeCheckedBag": false } },
   "annualIncome": 95000,
   "householdIncome": null,
   "estimatedCreditScore": 740

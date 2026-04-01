@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 import ChatPanel from "@/app/components/ChatPanel";
 import LiveProfileSidebar from "@/app/components/LiveProfileSidebar";
@@ -39,9 +39,54 @@ const DEV_MOCK_RESULTS: RecommendationResult[] = [
 ];
 
 const DEV_MOCK_ARSENAL_CARDS = [
-  { name: "Wealthsimple Cash Visa Prepaid", purpose: "The No-Fee Everyday Backup", description: "1% on everything with zero annual fee — seamless for any purchase that doesn't fit your other cards." },
-  { name: "RBC Avion Visa Infinite", purpose: "Travel & Points Engine", description: "2x Avion points on travel and a solid earn rate across the board — your go-to for bookings and dining out." },
-  { name: "Amex Platinum", purpose: "Premium Perks & Lounge Access", description: "The $799 fee pays for itself with unlimited Priority Pass lounge access, $200 travel credit, and top-tier MR earn rates." },
+  {
+    name: "Wealthsimple Cash Visa Prepaid",
+    purpose: "Everyday No-Fee Shield",
+    description: "Zero annual fee and flat cash back on all purchases make this the perfect fallback for anything outside your premium rewards cards.",
+    visualConfig: {
+      baseColor: "#111111",
+      metalness: 0.2,
+      roughness: 0.15,
+      finish: "glossy",
+      brandDomain: "wealthsimple.com",
+      companyName: "Wealthsimple",
+      network: "visa",
+      cardNumber: "1234 5678 9012 3456",
+      isMetal: false,
+    },
+  },
+  {
+    name: "RBC Avion Visa Infinite",
+    purpose: "Travel & Dining Powerhouse",
+    description: "Strong earn rates on travel and restaurants, plus flexible Avion points redemptions that keep your premium lifestyle covered.",
+    visualConfig: {
+      baseColor: "#00539B",
+      metalness: 0.2,
+      roughness: 0.15,
+      finish: "glossy",
+      brandDomain: "rbc.com",
+      companyName: "RBC",
+      network: "visa",
+      cardNumber: "1234 5678 9012 3456",
+      isMetal: false,
+    },
+  },
+  {
+    name: "Amex Platinum",
+    purpose: "Luxury Travel & Lounge Anchor",
+    description: "A premium metal card built for frequent travellers — lounges, travel credits, and high MR earn rates justify the fee for the right spender.",
+    visualConfig: {
+      baseColor: "#B0B0B0",
+      metalness: 0.9,
+      roughness: 0.4,
+      finish: "brushed_metal",
+      brandDomain: "americanexpress.com",
+      companyName: "Amex",
+      network: "amex",
+      cardNumber: "1234 5678 9012 3456",
+      isMetal: true,
+    },
+  },
 ];
 
 export default function Home() {
@@ -76,7 +121,14 @@ export default function Home() {
     setArsenalOpen(true);
   }
 
-  const activeResults = devResults ?? results;
+  const activeResults = useMemo(() => {
+    const base = devResults ?? results;
+    if (arsenalCards.length > 0 && !devResults) {
+      const names = new Set(arsenalCards.map(c => c.name));
+      return base.filter(r => names.has(r.card.name));
+    }
+    return base;
+  }, [devResults, results, arsenalCards]);
   const activeArsenalCards = devResults ? DEV_MOCK_ARSENAL_CARDS : arsenalCards;
 
   return (

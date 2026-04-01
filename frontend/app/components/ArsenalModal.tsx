@@ -176,7 +176,8 @@ export default function ArsenalModal({ results, arsenalCards, onClose, onDevSkip
                   cardType={selected.card.cardType as "visa" | "mastercard" | "amex"}
                   cardName={selected.card.name}
                   issuer={selected.card.issuer}
-                  color={CARD_COLOR_OVERRIDES[selected.card.name]}
+                  color={aiCard?.visualConfig?.baseColor ?? CARD_COLOR_OVERRIDES[selected.card.name]}
+                  visualConfig={aiCard?.visualConfig}
                 />
               )}
             </div>

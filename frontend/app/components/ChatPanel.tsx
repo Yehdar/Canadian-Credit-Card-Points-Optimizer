@@ -25,7 +25,7 @@ export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, 
 
   function handleSend() {
     const text = input.trim();
-    if (!text || isLoading || isDone) return;
+    if (!text || isLoading) return;
     onSendMessage(text);
     setInput("");
     inputRef.current?.focus();
@@ -111,32 +111,26 @@ export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, 
 
       {/* Input row */}
       <div className="border-t border-[#DADCE0] px-3 py-3 dark:border-[#3C4043]">
-        {isDone ? (
-          <p className="text-center text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
-            Conversation complete — results shown below.
-          </p>
-        ) : (
-          <div className="flex items-center gap-2">
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isLoading}
-              placeholder="Type your answer…"
-              className="flex-1 rounded-full border border-[#DADCE0] bg-[#F8F9FA] px-4 py-2 text-[13px] text-[#202124] placeholder-[#9AA0A6] outline-none transition focus:border-[#1A73E8] focus:bg-white disabled:opacity-50 dark:border-[#3C4043] dark:bg-[#202124] dark:text-[#E8EAED] dark:placeholder-[#5F6368] dark:focus:bg-[#2D2E30]"
-            />
-            <button
-              onClick={handleSend}
-              disabled={!input.trim() || isLoading}
-              aria-label="Send message"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1A73E8] text-white transition hover:bg-[#1557B0] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <SendIcon />
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isLoading}
+            placeholder="Type your answer…"
+            className="flex-1 rounded-full border border-[#DADCE0] bg-[#F8F9FA] px-4 py-2 text-[13px] text-[#202124] placeholder-[#9AA0A6] outline-none transition focus:border-[#1A73E8] focus:bg-white disabled:opacity-50 dark:border-[#3C4043] dark:bg-[#202124] dark:text-[#E8EAED] dark:placeholder-[#5F6368] dark:focus:bg-[#2D2E30]"
+          />
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || isLoading}
+            aria-label="Send message"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1A73E8] text-white transition hover:bg-[#1557B0] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <SendIcon />
+          </button>
+        </div>
       </div>
     </div>
   );

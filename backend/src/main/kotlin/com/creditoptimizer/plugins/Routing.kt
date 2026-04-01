@@ -1,6 +1,6 @@
 package com.creditoptimizer.plugins
 
-import com.creditoptimizer.dto.ChatRequest
+import com.creditoptimizer.dto.OptimizeRequest
 import com.creditoptimizer.dto.CreateProfileRequest
 import com.creditoptimizer.dto.RecommendationsRequest
 import com.creditoptimizer.dto.UpdateProfileRequest
@@ -40,8 +40,8 @@ fun Application.configureRouting() {
             // Chat  (Gemini 2.0 Flash — Akinator-style card advisor)
             // ------------------------------------------------------------------
             post("/chat") {
-                val request = call.receive<ChatRequest>()
-                val response = geminiService.chat(request.messages)
+                val request = call.receive<OptimizeRequest>()
+                val response = geminiService.optimize(request)
                 call.respond(HttpStatusCode.OK, response)
             }
 

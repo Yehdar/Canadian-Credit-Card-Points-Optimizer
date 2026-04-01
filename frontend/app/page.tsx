@@ -11,13 +11,48 @@ import { useRecommendations } from "@/hooks/useRecommendations";
 import { useChat } from "@/hooks/useChat";
 import type { RecommendationResult } from "@/lib/api";
 
+// Dev-only mock data for the Arsenal skip tool.
+const DEV_MOCK_RESULTS: RecommendationResult[] = [
+  {
+    card: { id: 999, name: "PC Financial Mastercard", issuer: "PC Financial", annualFee: 0, pointsCurrency: "PC Optimum", cardType: "mastercard", isPointsBased: true },
+    breakdown: [{ category: "groceries", spent: 6000, pointsEarned: 60000, valueCAD: 90 }],
+    totalPointsEarned: 60000,
+    totalValueCAD: 90,
+    netAnnualValue: 90,
+    eligibilityWarning: undefined,
+  },
+  {
+    card: { id: 998, name: "CIBC Dividend Visa Infinite", issuer: "CIBC", annualFee: 120, pointsCurrency: "Cash Back", cardType: "visa", isPointsBased: false },
+    breakdown: [{ category: "dining", spent: 3600, pointsEarned: 0, valueCAD: 72 }, { category: "gas", spent: 1200, pointsEarned: 0, valueCAD: 24 }],
+    totalPointsEarned: 0,
+    totalValueCAD: 144,
+    netAnnualValue: 24,
+    eligibilityWarning: undefined,
+  },
+  {
+    card: { id: 997, name: "Wealthsimple Cash Visa Prepaid", issuer: "Wealthsimple", annualFee: 0, pointsCurrency: "Cash Back", cardType: "visa", isPointsBased: false },
+    breakdown: [{ category: "other", spent: 2400, pointsEarned: 0, valueCAD: 24 }],
+    totalPointsEarned: 0,
+    totalValueCAD: 24,
+    netAnnualValue: 24,
+    eligibilityWarning: undefined,
+  },
+];
+
+const DEV_MOCK_ARSENAL_CARDS = [
+  { name: "PC Financial Mastercard", purpose: "The Grocery Powerhouse", description: "Earns 45 PC Optimum points per $1 at Loblaw stores — your primary earn engine for weekly grocery runs." },
+  { name: "CIBC Dividend Visa Infinite", purpose: "Dining & Gas Anchor", description: "4% cash back on dining and gas, covering your top discretionary categories with a solid return." },
+  { name: "Wealthsimple Cash Visa Prepaid", purpose: "The No-Fee Backup", description: "1% on everything else with zero annual fee — perfect for purchases that don't fit your other cards." },
+];
+
 export default function Home() {
   const { activeProfile } = useProfile();
   const { results, isCalculating, calculate } = useRecommendations();
-  const { messages, isLoading: isChatLoading, extractedData, recommendationData, arsenalInsights, sendMessage } = useChat();
+  const { messages, isLoading: isChatLoading, extractedData, recommendationData, arsenalCards, isDone, sendMessage, addBotMessage } = useChat();
 
   const [arsenalOpen, setArsenalOpen] = useState(false);
   const [viewedArsenal, setViewedArsenal] = useState<RecommendationResult[]>([]);
+  const [devResults, setDevResults] = useState<RecommendationResult[] | null>(null);
 
   // When Gemini completes, auto-fetch recommendations and open the Arsenal.
   useEffect(() => {
@@ -35,8 +70,17 @@ export default function Home() {
 
   function handleCloseArsenal() {
     setArsenalOpen(false);
-    setViewedArsenal(results);
+    setViewedArsenal(devResults ?? results);
+    addBotMessage("Want to keep chatting to better tailor your arsenal? I can swap out cards if these don't fit your vibe. 🎯");
   }
+
+  function handleDevSkip() {
+    setDevResults(DEV_MOCK_RESULTS);
+    setArsenalOpen(true);
+  }
+
+  const activeResults = devResults ?? results;
+  const activeArsenalCards = devResults ? DEV_MOCK_ARSENAL_CARDS : arsenalCards;
 
   return (
     /*
@@ -60,7 +104,7 @@ export default function Home() {
           <ChatPanel
             messages={messages}
             isLoading={isChatLoading || isCalculating}
-            isDone={!!recommendationData}
+            isDone={isDone}
             onSendMessage={sendMessage}
           />
         </div>
@@ -75,12 +119,23 @@ export default function Home() {
       </main>
 
       {/* ── Arsenal Modal ──────────────────────────────────────────────── */}
-      {arsenalOpen && results.length > 0 && (
+      {arsenalOpen && activeResults.length > 0 && (
         <ArsenalModal
-          results={results}
-          insights={arsenalInsights ?? {}}
+          results={activeResults}
+          arsenalCards={activeArsenalCards}
           onClose={handleCloseArsenal}
+          onDevSkip={process.env.NODE_ENV === "development" ? handleDevSkip : undefined}
         />
+      )}
+
+      {/* ── Dev skip button (development only) ────────────────────────── */}
+      {process.env.NODE_ENV === "development" && !arsenalOpen && (
+        <button
+          onClick={handleDevSkip}
+          className="fixed bottom-4 left-4 z-[60] rounded-lg bg-yellow-400 px-3 py-1.5 text-xs font-bold text-black shadow-lg transition hover:bg-yellow-300"
+        >
+          DEV ⚡ Skip to Arsenal
+        </button>
       )}
     </div>
   );

@@ -74,7 +74,7 @@ class GeminiService(private val apiKey: String) {
 
         val httpResponse = try {
             client.post(
-                "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=$apiKey"
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
             ) {
                 contentType(ContentType.Application.Json)
                 setBody(payload)
@@ -96,6 +96,15 @@ class GeminiService(private val apiKey: String) {
             logger.error("Gemini 429: $geminiMsg")
             return ChatResponse(
                 message = "I'm receiving a lot of requests right now — please wait a moment and try again.",
+                isDone = false
+            )
+        }
+
+        if (httpResponse.status.value == 503 || httpResponse.status.value == 502) {
+            val bodyText = httpResponse.bodyAsText()
+            logger.error("Gemini API error ${httpResponse.status.value}: $bodyText")
+            return ChatResponse(
+                message = "The AI service is temporarily unavailable due to high demand — please wait a moment and try again.",
                 isDone = false
             )
         }

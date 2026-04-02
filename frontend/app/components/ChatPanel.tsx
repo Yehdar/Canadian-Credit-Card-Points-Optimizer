@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CreditCard } from "lucide-react";
+import { Bookmark, CreditCard } from "lucide-react";
 import type { ChatMessage } from "@/lib/api";
 
 interface ChatPanelProps {
@@ -11,9 +11,11 @@ interface ChatPanelProps {
   onSendMessage: (text: string) => void;
   hasCards?: boolean;
   onViewCards?: () => void;
+  hasSavedCards?: boolean;
+  onViewSavedCards?: () => void;
 }
 
-export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, hasCards, onViewCards }: ChatPanelProps) {
+export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, hasCards, onViewCards, hasSavedCards, onViewSavedCards }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -52,15 +54,26 @@ export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, 
             <p className="text-[11px] text-[#5F6368] dark:text-[#9AA0A6]">AI Card Advisor</p>
           </div>
         </div>
-        {hasCards && onViewCards && (
-          <button
-            onClick={onViewCards}
-            className="flex items-center gap-1.5 rounded-lg border border-[#DADCE0] px-2.5 py-1.5 text-[11px] font-medium text-[#5F6368] transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
-          >
-            <CreditCard className="h-3.5 w-3.5" />
-            View Credit Cards
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {hasCards && onViewCards && (
+            <button
+              onClick={onViewCards}
+              className="flex items-center gap-1.5 rounded-lg border border-[#DADCE0] px-2.5 py-1.5 text-[11px] font-medium text-[#5F6368] transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
+            >
+              <CreditCard className="h-3.5 w-3.5" />
+              View Credit Cards
+            </button>
+          )}
+          {hasSavedCards && onViewSavedCards && (
+            <button
+              onClick={onViewSavedCards}
+              className="flex items-center gap-1.5 rounded-lg border border-[#DADCE0] px-2.5 py-1.5 text-[11px] font-medium text-[#5F6368] transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
+            >
+              <Bookmark className="h-3.5 w-3.5" />
+              Saved Cards
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Message list */}

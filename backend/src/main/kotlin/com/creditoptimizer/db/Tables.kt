@@ -30,6 +30,9 @@ object SpendingProfiles : IntIdTable("spending_profiles") {
     val householdIncome       = integer("household_income").nullable()
     val estimatedCreditScore  = integer("estimated_credit_score").nullable()
 
+    // Gemini-recommended cards serialized as JSON (added in V10); NULL until user saves
+    val savedCardsJson        = text("saved_cards_json").nullable()
+
     val createdAt     = timestamp("created_at")
     val updatedAt     = timestamp("updated_at")
 }

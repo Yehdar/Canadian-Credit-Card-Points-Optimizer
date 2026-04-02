@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
-import type { RecommendationResult } from "@/lib/api";
+import type { RecommendationResult, SavedCard } from "@/lib/api";
 import type { ArsenalCard } from "@/hooks/useChat";
 import { VisaMark, MastercardMark, AmexMark } from "./NetworkMarks";
 
@@ -21,6 +21,8 @@ interface ArsenalModalProps {
   arsenalCards: ArsenalCard[];
   onClose: () => void;
   onDevSkip?: () => void;
+  activeProfileName: string | null;
+  onSaveCards: (() => void) | null;
 }
 
 const NETWORK_MARKS: Record<string, React.ReactNode> = {
@@ -100,8 +102,10 @@ function CardPortrait({
   );
 }
 
-export default function ArsenalModal({ results, arsenalCards, onClose, onDevSkip }: ArsenalModalProps) {
+export default function ArsenalModal({ results, arsenalCards, onClose, onDevSkip, activeProfileName, onSaveCards }: ArsenalModalProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
+  const [saveDismissed, setSaveDismissed] = useState(false);
 
   // Close on Escape key
   useEffect(() => {
@@ -117,6 +121,13 @@ export default function ArsenalModal({ results, arsenalCards, onClose, onDevSkip
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
+
+  function handleSave() {
+    if (!onSaveCards) return;
+    onSaveCards();
+    setSaveState("saved");
+    setTimeout(() => { setSaveState("idle"); setSaveDismissed(true); }, 2000);
+  }
 
   const selected = results[selectedIndex];
   const aiCard = arsenalCards.find(c => c.name === selected?.card.name);
@@ -320,11 +331,48 @@ export default function ArsenalModal({ results, arsenalCards, onClose, onDevSkip
           </div>
         </div>
 
-        {/* ── Footer: exit strategy ───────────────────────────────────────── */}
+        {/* ── Footer: save prompt + exit strategy ─────────────────────────── */}
         <div className="flex shrink-0 items-center justify-between gap-4 border-t border-[#DADCE0] bg-[#F8F9FA] px-6 py-4 dark:border-[#3C4043] dark:bg-[#202124]">
-          <p className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
-            Want to keep chatting to fine-tune this arsenal?
-          </p>
+
+          {/* Left: save prompt when a profile is active, otherwise original text */}
+          <div className="flex items-center gap-2">
+            {activeProfileName && !saveDismissed && onSaveCards ? (
+              saveState === "saved" ? (
+                <span className="flex items-center gap-1.5 text-[12px] font-medium text-[#1E8E3E] dark:text-[#81C995]">
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
+                    <path d="M2 6.5L5.5 10L11 3" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Saved!
+                </span>
+              ) : (
+                <>
+                  <span className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
+                    Save {results.length} card{results.length !== 1 ? "s" : ""} to &lsquo;{activeProfileName}&rsquo;?
+                  </span>
+                  <button
+                    onClick={handleSave}
+                    className="rounded-lg bg-[#202124] px-3 py-1.5 text-[12px] font-medium text-white transition hover:bg-[#3C4043] dark:bg-[#E8EAED] dark:text-[#202124] dark:hover:bg-[#BDC1C6]"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setSaveDismissed(true)}
+                    aria-label="Dismiss save prompt"
+                    className="flex h-5 w-5 items-center justify-center rounded-full text-[#9AA0A6] transition hover:bg-[#DADCE0] dark:hover:bg-[#3C4043]"
+                  >
+                    <svg width="9" height="9" viewBox="0 0 9 9" fill="none" aria-hidden>
+                      <path d="M1 1l7 7M8 1L1 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                </>
+              )
+            ) : (
+              <p className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
+                Want to keep chatting to fine-tune this arsenal?
+              </p>
+            )}
+          </div>
+
           <button
             onClick={onClose}
             className="shrink-0 rounded-lg border border-[#DADCE0] bg-white px-4 py-2 text-[13px] font-medium text-[#202124] transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:bg-[#292A2D] dark:text-[#E8EAED] dark:hover:bg-[#3C4043]"

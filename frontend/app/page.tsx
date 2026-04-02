@@ -5,10 +5,11 @@ import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 import ChatPanel from "@/app/components/ChatPanel";
 import LiveProfileSidebar from "@/app/components/LiveProfileSidebar";
 import ArsenalModal from "@/app/components/ArsenalModal";
+import SavedCatalog from "@/app/components/SavedCatalog";
 import { useProfile } from "@/context/ProfileContext";
 import { useChat } from "@/hooks/useChat";
 import type { ArsenalCard } from "@/hooks/useChat";
-import type { RecommendationResult } from "@/lib/api";
+import type { RecommendationResult, SavedCard } from "@/lib/api";
 
 // Dev-only mock data for the Arsenal skip tool.
 const DEV_MOCK_RESULTS: RecommendationResult[] = [
@@ -90,11 +91,13 @@ const DEV_MOCK_ARSENAL_CARDS: ArsenalCard[] = [
 ];
 
 export default function Home() {
-  const { activeProfile } = useProfile();
+  const { activeProfile, saveCardsToProfile } = useProfile();
   const { messages, isLoading: isChatLoading, extractedData, results, arsenalCards, isDone, sendMessage, addBotMessage } = useChat();
 
   const [arsenalOpen, setArsenalOpen] = useState(false);
   const [devResults, setDevResults] = useState<RecommendationResult[] | null>(null);
+  const [savedCatalogOpen, setSavedCatalogOpen] = useState(false);
+  const [savedCardView, setSavedCardView] = useState<SavedCard | null>(null);
 
   // Open the Arsenal modal once Gemini returns results.
   useEffect(() => {
@@ -106,6 +109,41 @@ export default function Home() {
   function handleCloseArsenal() {
     setArsenalOpen(false);
     addBotMessage("Want to keep chatting to better tailor your arsenal? I can swap out cards if these don't fit your vibe. 🎯");
+  }
+
+  function handleSaveCards() {
+    if (!activeProfile) return;
+    const cards: SavedCard[] = activeResults.map((r) => {
+      const ac = activeArsenalCards.find((c) => c.name === r.card.name);
+      return {
+        name:               r.card.name,
+        issuer:             r.card.issuer,
+        annualFee:          r.card.annualFee,
+        pointsCurrency:     r.card.pointsCurrency,
+        cardType:           r.card.cardType,
+        isPointsBased:      r.card.isPointsBased,
+        breakdown:          r.breakdown,
+        totalPointsEarned:  r.totalPointsEarned,
+        totalValueCAD:      r.totalValueCAD,
+        netAnnualValue:     r.netAnnualValue,
+        eligibilityWarning: r.eligibilityWarning,
+        purpose:            ac?.purpose     ?? "",
+        description:        ac?.description ?? "",
+        visualConfig:       ac?.visualConfig,
+      };
+    });
+    saveCardsToProfile(cards);
+  }
+
+  function handleReSyncCard(card: SavedCard) {
+    const sorted = [...(card.breakdown ?? [])].sort((a, b) => b.spent - a.spent);
+    const topSpends = sorted.map(b => `${b.category} $${b.spent}`);
+    sendMessage(`arsenal: I spend ${topSpends.join(", ")}`);
+  }
+
+  function handleViewSavedCard(card: SavedCard) {
+    setSavedCardView(card);
+    setSavedCatalogOpen(false);
   }
 
   function handleDevSkip() {
@@ -122,6 +160,33 @@ export default function Home() {
     return base;
   }, [devResults, results, arsenalCards]);
   const activeArsenalCards = devResults ? DEV_MOCK_ARSENAL_CARDS : arsenalCards;
+
+  const savedCardModalData = useMemo(() => {
+    if (!savedCardView) return null;
+    const result: RecommendationResult = {
+      card: {
+        id: 0,
+        name: savedCardView.name,
+        issuer: savedCardView.issuer,
+        annualFee: savedCardView.annualFee,
+        pointsCurrency: savedCardView.pointsCurrency,
+        cardType: savedCardView.cardType,
+        isPointsBased: savedCardView.isPointsBased,
+      },
+      breakdown: savedCardView.breakdown,
+      totalPointsEarned: savedCardView.totalPointsEarned,
+      totalValueCAD: savedCardView.totalValueCAD,
+      netAnnualValue: savedCardView.netAnnualValue,
+      eligibilityWarning: savedCardView.eligibilityWarning,
+    };
+    const arsenal: ArsenalCard = {
+      name: savedCardView.name,
+      purpose: savedCardView.purpose,
+      description: savedCardView.description,
+      visualConfig: savedCardView.visualConfig,
+    };
+    return { result, arsenal };
+  }, [savedCardView]);
 
   return (
     /*
@@ -143,6 +208,8 @@ export default function Home() {
             onSendMessage={sendMessage}
             hasCards={activeResults.length > 0}
             onViewCards={() => setArsenalOpen(true)}
+            hasSavedCards={!!(activeProfile?.savedCards?.length)}
+            onViewSavedCards={() => setSavedCatalogOpen(true)}
           />
         </div>
       </aside>
@@ -162,6 +229,29 @@ export default function Home() {
           arsenalCards={activeArsenalCards}
           onClose={handleCloseArsenal}
           onDevSkip={process.env.NODE_ENV === "development" ? handleDevSkip : undefined}
+          activeProfileName={activeProfile?.name ?? null}
+          onSaveCards={activeProfile ? handleSaveCards : null}
+        />
+      )}
+
+      {/* ── Saved Catalog Modal ────────────────────────────────────────── */}
+      {savedCatalogOpen && !!(activeProfile?.savedCards?.length) && (
+        <SavedCatalog
+          savedCards={activeProfile!.savedCards!}
+          onClose={() => setSavedCatalogOpen(false)}
+          onReSyncCard={handleReSyncCard}
+          onViewCard={handleViewSavedCard}
+        />
+      )}
+
+      {/* ── Single Saved Card 3D Preview ───────────────────────────────── */}
+      {savedCardModalData && (
+        <ArsenalModal
+          results={[savedCardModalData.result]}
+          arsenalCards={[savedCardModalData.arsenal]}
+          onClose={() => setSavedCardView(null)}
+          activeProfileName={null}
+          onSaveCards={null}
         />
       )}
 

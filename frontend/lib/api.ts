@@ -29,6 +29,35 @@ export interface RecommendationResult {
   eligibilityWarning?: string;
 }
 
+export interface SavedCardVisualConfig {
+  baseColor:   string;
+  metalness:   number;
+  roughness:   number;
+  finish:      "matte" | "glossy" | "brushed_metal";
+  brandDomain: string;
+  companyName: string;
+  network:     "visa" | "mastercard" | "amex";
+  cardNumber:  string;
+  isMetal:     boolean;
+}
+
+export interface SavedCard {
+  name:               string;
+  issuer:             string;
+  annualFee:          number;
+  pointsCurrency:     string;
+  cardType:           string;
+  isPointsBased:      boolean;
+  breakdown:          CategoryBreakdown[];
+  totalPointsEarned:  number;
+  totalValueCAD:      number;
+  netAnnualValue:     number;
+  eligibilityWarning?: string;
+  purpose:            string;
+  description:        string;
+  visualConfig?:      SavedCardVisualConfig;
+}
+
 export interface SpendingBreakdown {
   // Original 8 categories
   groceries: number;
@@ -79,6 +108,7 @@ export interface Profile {
   name: string;
   profileType: ProfileType;
   spending: SpendingBreakdown;
+  savedCards: SavedCard[] | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -93,6 +123,7 @@ export interface UpdateProfilePayload {
   name?: string;
   profileType?: ProfileType;
   spending?: SpendingBreakdown;
+  savedCards?: SavedCard[];
 }
 
 export async function fetchProfiles(): Promise<Profile[]> {

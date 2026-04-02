@@ -58,30 +58,37 @@ class GeminiService(private val apiKey: String) {
     private val httpJson = Json { ignoreUnknownKeys = true }
 
     suspend fun optimize(request: OptimizeRequest): ChatResponse {
-        val userDataJson = prettyJson.encodeToString(request)
+        val isExtract = request.strategy == "extract"
+        val systemPrompt = if (isExtract) EXTRACT_SYSTEM_PROMPT else SYSTEM_PROMPT
 
-        val userMessage = buildString {
-            if (!request.userText.isNullOrBlank()) {
-                appendLine("The user said:")
-                appendLine("<user_message>")
-                appendLine(request.userText)
-                appendLine("</user_message>")
+        val userMessage = if (isExtract) {
+            // For extraction, just pass the raw conversation text
+            request.userText ?: "No messages yet."
+        } else {
+            val userDataJson = prettyJson.encodeToString(request)
+            buildString {
+                if (!request.userText.isNullOrBlank()) {
+                    appendLine("The user said:")
+                    appendLine("<user_message>")
+                    appendLine(request.userText)
+                    appendLine("</user_message>")
+                    appendLine()
+                    appendLine("Extract all spending amounts, income, credit score, reward type preference, fee preference, and network preferences from this message. Values stated in the message override the structured profile below.")
+                    appendLine()
+                }
+                appendLine("Structured profile (use as fallback if the message above is missing data):")
+                appendLine("<user_data>")
+                appendLine(userDataJson)
+                appendLine("</user_data>")
                 appendLine()
-                appendLine("Extract all spending amounts, income, credit score, reward type preference, fee preference, and network preferences from this message. Values stated in the message override the structured profile below.")
-                appendLine()
+                append("Analyze this data and return the optimal card strategy. Output ONLY the <recommendation_data> block — no greeting, no preamble, no explanation after.")
             }
-            appendLine("Structured profile (use as fallback if the message above is missing data):")
-            appendLine("<user_data>")
-            appendLine(userDataJson)
-            appendLine("</user_data>")
-            appendLine()
-            append("Analyze this data and return the optimal card strategy. Output ONLY the <recommendation_data> block — no greeting, no preamble, no explanation after.")
         }
 
         val payload = buildJsonObject {
             put("system_instruction", buildJsonObject {
                 putJsonArray("parts") {
-                    addJsonObject { put("text", SYSTEM_PROMPT) }
+                    addJsonObject { put("text", systemPrompt) }
                 }
             })
             putJsonArray("contents") {
@@ -332,6 +339,45 @@ User: ${'$'}200/mo groceries, ${'$'}50 dining, ${'$'}90 transit (Presto), ${'$'}
   "estimatedCreditScore": 760
 }
 </recommendation_data>
+        """.trimIndent()
+
+        val EXTRACT_SYSTEM_PROMPT = """
+You are a financial data extractor for a Canadian credit card optimizer.
+Given one or more user messages, extract spending and financial profile information.
+
+Rules:
+- Extract MONTHLY spending amounts in CAD for each category the user mentioned; use null for categories not mentioned
+- Extract annualIncome if the user mentions salary, income, or yearly earnings (convert to annual if needed)
+- Extract estimatedCreditScore if mentioned
+- Infer rewardType: "cashback" if user prefers cash back, "points" if travel/points preferred, "both" if no preference stated or both mentioned — null if completely unclear
+- Infer feePreference: "no_fee" if user explicitly wants no annual fee, "include_fee" if they are open to fees — null if not mentioned
+- rogersOwner: true only if user mentions Rogers, Fido, or Shaw; false otherwise
+- amazonPrime: true only if user mentions Amazon Prime; false otherwise
+- institutions and networks: use empty array and ["visa","mastercard","amex"] as defaults unless user specifies
+
+Return ONLY the block below, then on the next line write a brief conversational reply (1–2 sentences) acknowledging what you learned and asking for the single most important missing piece (income if unknown, or reward preference if unknown):
+
+<extracted_data>
+{
+  "spending": {
+    "groceries": <number|null>, "dining": <number|null>, "gas": <number|null>,
+    "travel": <number|null>, "entertainment": <number|null>, "subscriptions": <number|null>,
+    "transit": <number|null>, "pharmacy": <number|null>, "onlineShopping": <number|null>,
+    "homeImprovement": <number|null>, "canadianTirePartners": <number|null>,
+    "foreignPurchases": <number|null>, "other": <number|null>
+  },
+  "filters": {
+    "rewardType": <"cashback"|"points"|"both"|null>,
+    "feePreference": <"no_fee"|"include_fee"|null>,
+    "rogersOwner": <boolean>, "amazonPrime": <boolean>,
+    "institutions": [], "networks": ["visa","mastercard","amex"],
+    "benefits": { "noForeignFee": false, "airportLounge": false, "priorityTravel": false, "freeCheckedBag": false }
+  },
+  "annualIncome": <number|null>,
+  "householdIncome": <number|null>,
+  "estimatedCreditScore": <number|null>
+}
+</extracted_data>
         """.trimIndent()
     }
 }

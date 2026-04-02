@@ -92,7 +92,7 @@ const DEV_MOCK_ARSENAL_CARDS: ArsenalCard[] = [
 
 export default function Home() {
   const { activeProfile, saveCardsToProfile } = useProfile();
-  const { messages, isLoading: isChatLoading, extractedData, results, arsenalCards, isDone, sendMessage, addBotMessage, resetChat } = useChat();
+  const { messages, isLoading: isChatLoading, extractedData, results, arsenalCards, isDone, sendMessage, getCards, reSyncCard, addBotMessage, resetChat } = useChat();
 
   const [arsenalOpen, setArsenalOpen] = useState(false);
   const [devResults, setDevResults] = useState<RecommendationResult[] | null>(null);
@@ -117,7 +117,7 @@ export default function Home() {
 
   function handleCloseArsenal() {
     setArsenalOpen(false);
-    addBotMessage("Want to keep chatting to better tailor your arsenal? I can swap out cards if these don't fit your vibe. 🎯");
+    addBotMessage("Want to keep chatting and fine-tuning the cards? \n Always happy to help you optimize further or answer any questions about the recommendations!");
   }
 
   function handleSaveCards() {
@@ -145,9 +145,7 @@ export default function Home() {
   }
 
   function handleReSyncCard(card: SavedCard) {
-    const sorted = [...(card.breakdown ?? [])].sort((a, b) => b.spent - a.spent);
-    const topSpends = sorted.map(b => `${b.category} $${b.spent}`);
-    sendMessage(`arsenal: I spend ${topSpends.join(", ")}`);
+    reSyncCard(card);
   }
 
   function handleViewSavedCard(card: SavedCard) {
@@ -219,6 +217,8 @@ export default function Home() {
             onViewCards={() => setArsenalOpen(true)}
             hasSavedCards={!!(activeProfile?.savedCards?.length)}
             onViewSavedCards={() => setSavedCatalogOpen(true)}
+            onGetCards={getCards}
+            canGetCards={messages.some(m => m.role === "user")}
           />
         </div>
       </aside>

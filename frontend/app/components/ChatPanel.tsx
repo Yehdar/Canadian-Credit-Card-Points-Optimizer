@@ -13,9 +13,11 @@ interface ChatPanelProps {
   onViewCards?: () => void;
   hasSavedCards?: boolean;
   onViewSavedCards?: () => void;
+  onGetCards?: () => void;
+  canGetCards?: boolean;
 }
 
-export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, hasCards, onViewCards, hasSavedCards, onViewSavedCards }: ChatPanelProps) {
+export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, hasCards, onViewCards, hasSavedCards, onViewSavedCards, onGetCards, canGetCards }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -143,6 +145,15 @@ export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, 
           >
             <SendIcon />
           </button>
+          {onGetCards && (
+            <button
+              onClick={onGetCards}
+              disabled={!canGetCards || isLoading}
+              className="shrink-0 rounded-full bg-[#1A73E8] px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-[#1557B0] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Get Cards Now
+            </button>
+          )}
         </div>
       </div>
     </div>

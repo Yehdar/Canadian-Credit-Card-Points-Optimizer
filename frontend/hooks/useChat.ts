@@ -11,6 +11,7 @@ import type {
   FeePreference,
   OptimizeRequest,
   RecommendationResult,
+  SavedCard,
 } from "@/lib/api";
 
 // Visual metadata for 3D card rendering, emitted by Gemini per card.
@@ -52,7 +53,6 @@ interface GeminiCard {
   visualConfig?: VisualConfig;
 }
 
-// Kept for LiveProfileSidebar compatibility — always null in single-shot mode.
 export interface ExtractedData {
   spending: {
     groceries: number | null; dining: number | null; gas: number | null;
@@ -109,108 +109,233 @@ function stripTags(text: string): string {
   return text.replace(/<recommendation_data>[\s\S]*?<\/recommendation_data>/g, "").trim();
 }
 
+function stripExtractTag(text: string): string {
+  return text.replace(/<extracted_data>[\s\S]*?<\/extracted_data>/g, "").trim();
+}
+
+function toSpendingBreakdown(spending: ExtractedData["spending"]): SpendingBreakdown {
+  if (!spending) return EMPTY_SPENDING;
+  return {
+    groceries:            spending.groceries            ?? 0,
+    dining:               spending.dining               ?? 0,
+    gas:                  spending.gas                  ?? 0,
+    travel:               spending.travel               ?? 0,
+    entertainment:        spending.entertainment        ?? 0,
+    subscriptions:        spending.subscriptions        ?? 0,
+    transit:              spending.transit              ?? 0,
+    other:                spending.other                ?? 0,
+    pharmacy:             spending.pharmacy             ?? 0,
+    onlineShopping:       spending.onlineShopping       ?? 0,
+    homeImprovement:      spending.homeImprovement      ?? 0,
+    canadianTirePartners: spending.canadianTirePartners ?? 0,
+    foreignPurchases:     spending.foreignPurchases     ?? 0,
+  };
+}
+
+function toFormFilters(filters: ExtractedData["filters"]): FormFilters {
+  if (!filters) return DEFAULT_FILTERS;
+  return {
+    rewardType:    (filters.rewardType    ?? DEFAULT_FILTERS.rewardType) as RewardType,
+    feePreference: (filters.feePreference ?? DEFAULT_FILTERS.feePreference) as FeePreference,
+    rogersOwner:   filters.rogersOwner   ?? false,
+    amazonPrime:   filters.amazonPrime   ?? false,
+    institutions:  filters.institutions  ?? [],
+    networks:      (filters.networks     ?? DEFAULT_FILTERS.networks) as CardNetwork[],
+    benefits: {
+      noForeignFee:   filters.benefits?.noForeignFee   ?? false,
+      airportLounge:  filters.benefits?.airportLounge  ?? false,
+      priorityTravel: filters.benefits?.priorityTravel ?? false,
+      freeCheckedBag: filters.benefits?.freeCheckedBag ?? false,
+    },
+  };
+}
+
+function parseGeminiCards(recRaw: string): { results: RecommendationResult[]; arsenalCards: ArsenalCard[] } | null {
+  try {
+    const parsed = JSON.parse(recRaw) as {
+      cards?: GeminiCard[];
+      annualIncome?: number | null;
+      householdIncome?: number | null;
+      estimatedCreditScore?: number | null;
+    };
+    if (!parsed.cards || parsed.cards.length === 0) return null;
+    return {
+      results: parsed.cards.map((c, i) => ({
+        card: {
+          id:             i,
+          name:           c.name,
+          issuer:         c.issuer         ?? "",
+          annualFee:      c.annualFee       ?? 0,
+          pointsCurrency: c.pointsCurrency  ?? "Cash Back",
+          cardType:       c.cardType        ?? "visa",
+          isPointsBased:  c.isPointsBased   ?? false,
+        },
+        breakdown:          c.breakdown         ?? [],
+        totalPointsEarned:  c.totalPointsEarned ?? 0,
+        totalValueCAD:      c.totalValueCAD      ?? 0,
+        netAnnualValue:     c.netAnnualValue     ?? 0,
+        eligibilityWarning: c.eligibilityWarning ?? undefined,
+      })),
+      arsenalCards: parsed.cards.map(c => ({
+        name:         c.name,
+        purpose:      c.purpose      ?? "",
+        description:  c.description  ?? "",
+        visualConfig: c.visualConfig,
+      })),
+    };
+  } catch {
+    return null;
+  }
+}
+
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useChat() {
-  const [messages, setMessages]       = useState<ChatMessage[]>([GREETING]);
-  const [isLoading, setIsLoading]     = useState(false);
-  const [results, setResults]         = useState<RecommendationResult[]>([]);
-  const [arsenalCards, setArsenalCards] = useState<ArsenalCard[]>([]);
-
-  // Always null in single-shot mode; kept so LiveProfileSidebar compiles unchanged.
-  const extractedData: ExtractedData | null = null;
+  const [messages, setMessages]           = useState<ChatMessage[]>([GREETING]);
+  const [isLoading, setIsLoading]         = useState(false);
+  const [results, setResults]             = useState<RecommendationResult[]>([]);
+  const [arsenalCards, setArsenalCards]   = useState<ArsenalCard[]>([]);
+  const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
 
   async function sendMessage(text: string) {
     if (!text.trim() || isLoading) return;
-
-    // User is continuing after results — clear everything and start fresh,
-    // but preserve the previous user message as spending context for Gemini.
-    let spendingContext = "";
-    if (results.length > 0) {
-      const prevUserMsg = messages.find(m => m.role === "user");
-      if (prevUserMsg) spendingContext = prevUserMsg.content;
-      setResults([]);
-      setArsenalCards([]);
-      setMessages([]);
-    }
 
     const userMsg: ChatMessage = { role: "user", content: text.trim() };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
-    const lc = text.toLowerCase();
-    const strategy =
-      lc.includes("arsenal") || lc.includes("multi") || lc.includes("multiple")
-        ? "arsenal"
-        : "simple";
-
-    // If this is a follow-up, prepend the previous spending profile so Gemini
-    // has the data it needs to calculate point values.
-    const effectiveUserText = spendingContext
-      ? `Context from user's previous message (spending profile):\n${spendingContext}\n\nNew request: ${text.trim()}`
-      : text.trim();
+    // Build cumulative context: all prior user messages + this one
+    const allUserMessages = [...messages.filter(m => m.role === "user"), userMsg]
+      .map(m => m.content)
+      .join("\n");
 
     const request: OptimizeRequest = {
-      strategy,
+      strategy: "extract",
       spending: EMPTY_SPENDING,
       filters:  DEFAULT_FILTERS,
-      userText: effectiveUserText,
+      userText: allUserMessages,
     };
 
     try {
       const response = await sendOptimizeRequest(request);
-      const recRaw   = extractTag(response.message, "recommendation_data");
+      const extractedRaw = extractTag(response.message, "extracted_data");
 
-      if (recRaw) {
+      if (extractedRaw) {
         try {
-          const parsed = JSON.parse(recRaw) as {
-            cards?: GeminiCard[];
-            annualIncome?: number | null;
-            householdIncome?: number | null;
-            estimatedCreditScore?: number | null;
-          };
-
-          if (parsed.cards && parsed.cards.length > 0) {
-            setResults(
-              parsed.cards.map((c, i) => ({
-                card: {
-                  id:             i,
-                  name:           c.name,
-                  issuer:         c.issuer         ?? "",
-                  annualFee:      c.annualFee       ?? 0,
-                  pointsCurrency: c.pointsCurrency  ?? "Cash Back",
-                  cardType:       c.cardType        ?? "visa",
-                  isPointsBased:  c.isPointsBased   ?? false,
-                },
-                breakdown:          c.breakdown         ?? [],
-                totalPointsEarned:  c.totalPointsEarned ?? 0,
-                totalValueCAD:      c.totalValueCAD      ?? 0,
-                netAnnualValue:     c.netAnnualValue     ?? 0,
-                eligibilityWarning: c.eligibilityWarning ?? undefined,
-              }))
-            );
-            setArsenalCards(parsed.cards.map(c => ({
-              name:         c.name,
-              purpose:      c.purpose      ?? "",
-              description:  c.description  ?? "",
-              visualConfig: c.visualConfig,
-            })));
-          }
-        } catch {
-          // Malformed JSON from Gemini — swallow and show fallback message.
-        }
+          const parsed = JSON.parse(extractedRaw) as ExtractedData;
+          setExtractedData(parsed);
+        } catch { /* malformed JSON — keep previous extractedData */ }
       }
 
-      const displayText = recRaw
-        ? "Your card strategy is ready — opening your Arsenal now!"
-        : stripTags(response.message) || "Couldn't generate a strategy. Please try again.";
-
+      const displayText = stripExtractTag(response.message) ||
+        "Got it! Keep adding details or click **Get Cards Now** when ready.";
       setMessages(prev => [...prev, { role: "model", content: displayText }]);
     } catch {
       setMessages(prev => [
         ...prev,
         { role: "model", content: "Sorry, something went wrong. Please try again." },
       ]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function getCards() {
+    if (isLoading) return;
+    setResults([]);
+    setArsenalCards([]);
+    setIsLoading(true);
+
+    const allText = messages.map(m => m.content).join(" ").toLowerCase();
+    const strategy =
+      allText.includes("one card") || allText.includes("single card") ? "simple" : "arsenal";
+
+    const request: OptimizeRequest = {
+      strategy,
+      spending:             toSpendingBreakdown(extractedData?.spending ?? null),
+      filters:              toFormFilters(extractedData?.filters ?? null),
+      annualIncome:         extractedData?.annualIncome         ?? undefined,
+      householdIncome:      extractedData?.householdIncome      ?? undefined,
+      estimatedCreditScore: extractedData?.estimatedCreditScore ?? undefined,
+      userText: messages.filter(m => m.role === "user").map(m => m.content).join("\n"),
+    };
+
+    try {
+      const response = await sendOptimizeRequest(request);
+      const recRaw = extractTag(response.message, "recommendation_data");
+
+      if (recRaw) {
+        const parsed = parseGeminiCards(recRaw);
+        if (parsed) {
+          setResults(parsed.results);
+          setArsenalCards(parsed.arsenalCards);
+        }
+      }
+
+      const displayText = recRaw
+        ? "Your card strategy is ready — opening your Arsenal now!"
+        : stripTags(response.message) || "Couldn't generate a strategy. Please try again.";
+      setMessages(prev => [...prev, { role: "model", content: displayText }]);
+    } catch {
+      setMessages(prev => [
+        ...prev,
+        { role: "model", content: "Sorry, something went wrong. Please try again." },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  // Re-sync a saved card: rebuilds extractedData from its breakdown, then calls getCards().
+  async function reSyncCard(card: SavedCard) {
+    if (isLoading) return;
+
+    // Reconstruct spending from the card's annual breakdown → convert to monthly
+    const spending: ExtractedData["spending"] = {
+      groceries: null, dining: null, gas: null, travel: null,
+      entertainment: null, subscriptions: null, transit: null, other: null,
+      pharmacy: null, onlineShopping: null, homeImprovement: null,
+      canadianTirePartners: null, foreignPurchases: null,
+    };
+    for (const b of card.breakdown ?? []) {
+      const key = b.category as keyof NonNullable<ExtractedData["spending"]>;
+      if (key in spending) {
+        (spending as Record<string, number | null>)[key] = b.spent / 12;
+      }
+    }
+    setExtractedData({ spending, filters: null, annualIncome: null, householdIncome: null, estimatedCreditScore: null });
+
+    // Add a context message so Gemini knows the spend profile
+    const sorted = [...(card.breakdown ?? [])].sort((a, b) => b.spent - a.spent);
+    const topSpends = sorted.map(b => `${b.category} $${Math.round(b.spent / 12)}`).join(", ");
+    const contextMsg: ChatMessage = { role: "user", content: `Re-syncing arsenal. Monthly spending: ${topSpends}` };
+    setMessages([GREETING, contextMsg]);
+    setResults([]);
+    setArsenalCards([]);
+
+    // Now run getCards() with the freshly set extractedData — but since setState is async
+    // we inline the getCards logic here with the known spending values.
+    setIsLoading(true);
+    const request: OptimizeRequest = {
+      strategy: "arsenal",
+      spending: toSpendingBreakdown(spending),
+      filters:  toFormFilters(null),
+      userText: contextMsg.content,
+    };
+
+    try {
+      const response = await sendOptimizeRequest(request);
+      const recRaw = extractTag(response.message, "recommendation_data");
+      if (recRaw) {
+        const parsed = parseGeminiCards(recRaw);
+        if (parsed) { setResults(parsed.results); setArsenalCards(parsed.arsenalCards); }
+      }
+      const displayText = recRaw
+        ? "Your card strategy is ready — opening your Arsenal now!"
+        : stripTags(response.message) || "Couldn't generate a strategy. Please try again.";
+      setMessages(prev => [...prev, { role: "model", content: displayText }]);
+    } catch {
+      setMessages(prev => [...prev, { role: "model", content: "Sorry, something went wrong. Please try again." }]);
     } finally {
       setIsLoading(false);
     }
@@ -226,10 +351,11 @@ export function useChat() {
     setMessages([GREETING]);
     setResults([]);
     setArsenalCards([]);
+    setExtractedData(null);
     setIsLoading(false);
   }
 
   const isDone = results.length > 0;
 
-  return { messages, isLoading, extractedData, results, arsenalCards, isDone, sendMessage, addBotMessage, resetChat };
+  return { messages, isLoading, extractedData, results, arsenalCards, isDone, sendMessage, getCards, reSyncCard, addBotMessage, resetChat };
 }

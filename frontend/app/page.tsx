@@ -92,12 +92,21 @@ const DEV_MOCK_ARSENAL_CARDS: ArsenalCard[] = [
 
 export default function Home() {
   const { activeProfile, saveCardsToProfile } = useProfile();
-  const { messages, isLoading: isChatLoading, extractedData, results, arsenalCards, isDone, sendMessage, addBotMessage } = useChat();
+  const { messages, isLoading: isChatLoading, extractedData, results, arsenalCards, isDone, sendMessage, addBotMessage, resetChat } = useChat();
 
   const [arsenalOpen, setArsenalOpen] = useState(false);
   const [devResults, setDevResults] = useState<RecommendationResult[] | null>(null);
   const [savedCatalogOpen, setSavedCatalogOpen] = useState(false);
   const [savedCardView, setSavedCardView] = useState<SavedCard | null>(null);
+
+  // Reset chat state when the active profile changes.
+  useEffect(() => {
+    resetChat();
+    setArsenalOpen(false);
+    setDevResults(null);
+    setSavedCatalogOpen(false);
+    setSavedCardView(null);
+  }, [activeProfile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Open the Arsenal modal once Gemini returns results.
   useEffect(() => {

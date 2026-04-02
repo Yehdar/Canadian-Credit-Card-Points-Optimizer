@@ -221,7 +221,15 @@ export function useChat() {
     setMessages(prev => [...prev, { role: "model", content: text }]);
   }
 
+  // Resets all chat state back to the initial greeting — call when switching profiles.
+  function resetChat() {
+    setMessages([GREETING]);
+    setResults([]);
+    setArsenalCards([]);
+    setIsLoading(false);
+  }
+
   const isDone = results.length > 0;
 
-  return { messages, isLoading, extractedData, results, arsenalCards, isDone, sendMessage, addBotMessage };
+  return { messages, isLoading, extractedData, results, arsenalCards, isDone, sendMessage, addBotMessage, resetChat };
 }

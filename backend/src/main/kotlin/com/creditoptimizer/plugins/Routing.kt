@@ -2,10 +2,8 @@ package com.creditoptimizer.plugins
 
 import com.creditoptimizer.dto.OptimizeRequest
 import com.creditoptimizer.dto.CreateProfileRequest
-import com.creditoptimizer.dto.RecommendationsRequest
 import com.creditoptimizer.dto.UpdateProfileRequest
 import com.creditoptimizer.service.GeminiService
-import com.creditoptimizer.service.PointsService
 import com.creditoptimizer.service.ProfileNotFoundException
 import com.creditoptimizer.service.ProfileService
 import io.ktor.http.*
@@ -25,7 +23,6 @@ fun Application.configureRouting() {
         allowMethod(HttpMethod.Delete)
     }
 
-    val pointsService  = PointsService()
     val profileService = ProfileService()
     val geminiService  = GeminiService(System.getenv("GEMINI_API_KEY") ?: "")
 
@@ -43,38 +40,6 @@ fun Application.configureRouting() {
                 val request = call.receive<OptimizeRequest>()
                 val response = geminiService.optimize(request)
                 call.respond(HttpStatusCode.OK, response)
-            }
-
-            // ------------------------------------------------------------------
-            // Cards
-            // ------------------------------------------------------------------
-            get("/cards") {
-                call.respond(HttpStatusCode.OK, pointsService.getAllCards())
-            }
-
-            // ------------------------------------------------------------------
-            // Recommendations
-            // Accepts: { "profileId": 1 }  OR  { "spending": { ... } }
-            // ------------------------------------------------------------------
-            post("/recommendations") {
-                val request = try {
-                    call.receive<RecommendationsRequest>()
-                } catch (e: Exception) {
-                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid request body"))
-                    return@post
-                }
-
-                val results = try {
-                    pointsService.calculateRecommendations(request)
-                } catch (e: ProfileNotFoundException) {
-                    call.respond(HttpStatusCode.NotFound, mapOf("error" to e.message))
-                    return@post
-                } catch (e: IllegalArgumentException) {
-                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to (e.message ?: "Bad request")))
-                    return@post
-                }
-
-                call.respond(HttpStatusCode.OK, results)
             }
 
             // ------------------------------------------------------------------

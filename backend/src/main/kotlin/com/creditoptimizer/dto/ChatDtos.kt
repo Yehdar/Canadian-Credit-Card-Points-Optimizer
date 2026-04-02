@@ -14,7 +14,8 @@ data class OptimizeRequest(
     val filters:              FormFilters       = FormFilters(),
     val annualIncome:         Int?              = null,
     val householdIncome:      Int?              = null,
-    val estimatedCreditScore: Int?              = null
+    val estimatedCreditScore: Int?              = null,
+    val userText:             String?           = null  // Raw chat message from the user
 )
 
 @Serializable

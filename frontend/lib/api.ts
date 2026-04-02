@@ -146,6 +146,7 @@ export interface OptimizeRequest {
   annualIncome?: number;
   householdIncome?: number;
   estimatedCreditScore?: number;
+  userText?: string;          // Raw chat message — Gemini extracts spending/prefs from this
 }
 
 export async function sendOptimizeRequest(request: OptimizeRequest): Promise<ChatResponse> {

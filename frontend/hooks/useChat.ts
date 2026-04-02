@@ -4,13 +4,13 @@ import { useState } from "react";
 import { sendOptimizeRequest } from "@/lib/api";
 import type {
   ChatMessage,
-  SpendingFormSubmission,
   SpendingBreakdown,
   FormFilters,
   CardNetwork,
   RewardType,
   FeePreference,
   OptimizeRequest,
+  RecommendationResult,
 } from "@/lib/api";
 
 // Visual metadata for 3D card rendering, emitted by Gemini per card.
@@ -29,6 +29,24 @@ export interface VisualConfig {
 // A single card in the Arsenal with Gemini-authored purpose and description.
 export interface ArsenalCard {
   name: string;
+  purpose: string;
+  description: string;
+  visualConfig?: VisualConfig;
+}
+
+// Full card data returned by Gemini, including calculated values.
+interface GeminiCard {
+  name: string;
+  issuer: string;
+  annualFee: number;
+  pointsCurrency: string;
+  cardType: string;
+  isPointsBased: boolean;
+  breakdown: Array<{ category: string; spent: number; pointsEarned: number; valueCAD: number }>;
+  totalPointsEarned: number;
+  totalValueCAD: number;
+  netAnnualValue: number;
+  eligibilityWarning?: string | null;
   purpose: string;
   description: string;
   visualConfig?: VisualConfig;
@@ -77,7 +95,7 @@ const DEFAULT_FILTERS: FormFilters = {
 
 const GREETING: ChatMessage = {
   role: "model",
-  content: "Ready to build your card strategy! Type **arsenal** for a multi-card setup that maximises every category, or **golden** for one perfect all-rounder.",
+  content: "Ready to build your card strategy! Type **arsenal** for a multi-card setup that maximises every category, or **one card** to find your single best match.",
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -91,69 +109,23 @@ function stripTags(text: string): string {
   return text.replace(/<recommendation_data>[\s\S]*?<\/recommendation_data>/g, "").trim();
 }
 
-function toSubmission(data: {
-  spending?: Partial<SpendingBreakdown> | null;
-  filters?: Partial<FormFilters> | null;
-  annualIncome?: number | null;
-  householdIncome?: number | null;
-  estimatedCreditScore?: number | null;
-}): SpendingFormSubmission {
-  const s = data.spending;
-  const f = data.filters;
-  const b = f?.benefits as Partial<FormFilters["benefits"]> | null | undefined;
-  return {
-    spending: {
-      groceries:            s?.groceries            ?? 0,
-      dining:               s?.dining               ?? 0,
-      gas:                  s?.gas                  ?? 0,
-      travel:               s?.travel               ?? 0,
-      entertainment:        s?.entertainment        ?? 0,
-      subscriptions:        s?.subscriptions        ?? 0,
-      transit:              s?.transit              ?? 0,
-      other:                s?.other                ?? 0,
-      pharmacy:             s?.pharmacy             ?? 0,
-      onlineShopping:       s?.onlineShopping       ?? 0,
-      homeImprovement:      s?.homeImprovement      ?? 0,
-      canadianTirePartners: s?.canadianTirePartners ?? 0,
-      foreignPurchases:     s?.foreignPurchases     ?? 0,
-    },
-    filters: {
-      rewardType:    (f?.rewardType    as RewardType)    ?? "both",
-      feePreference: (f?.feePreference as FeePreference) ?? "include_fee",
-      rogersOwner:   f?.rogersOwner   ?? false,
-      amazonPrime:   f?.amazonPrime   ?? false,
-      institutions:  f?.institutions  ?? [],
-      networks:      (f?.networks     as CardNetwork[])  ?? ["visa", "mastercard", "amex"],
-      benefits: {
-        noForeignFee:   b?.noForeignFee   ?? false,
-        airportLounge:  b?.airportLounge  ?? false,
-        priorityTravel: b?.priorityTravel ?? false,
-        freeCheckedBag: b?.freeCheckedBag ?? false,
-      },
-    },
-    annualIncome:         data.annualIncome         ?? undefined,
-    householdIncome:      data.householdIncome      ?? undefined,
-    estimatedCreditScore: data.estimatedCreditScore ?? undefined,
-  };
-}
-
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useChat() {
-  const [messages, setMessages]                     = useState<ChatMessage[]>([GREETING]);
-  const [isLoading, setIsLoading]                   = useState(false);
-  const [recommendationData, setRecommendationData] = useState<SpendingFormSubmission | null>(null);
-  const [arsenalCards, setArsenalCards]             = useState<ArsenalCard[]>([]);
+  const [messages, setMessages]       = useState<ChatMessage[]>([GREETING]);
+  const [isLoading, setIsLoading]     = useState(false);
+  const [results, setResults]         = useState<RecommendationResult[]>([]);
+  const [arsenalCards, setArsenalCards] = useState<ArsenalCard[]>([]);
 
-  // Always null in single-shot mode; kept so page.tsx compiles unchanged.
+  // Always null in single-shot mode; kept so LiveProfileSidebar compiles unchanged.
   const extractedData: ExtractedData | null = null;
 
   async function sendMessage(text: string) {
     if (!text.trim() || isLoading) return;
 
     // User is continuing after results — clear everything and start fresh.
-    if (recommendationData) {
-      setRecommendationData(null);
+    if (results.length > 0) {
+      setResults([]);
       setArsenalCards([]);
       setMessages([]);
     }
@@ -172,6 +144,7 @@ export function useChat() {
       strategy,
       spending: EMPTY_SPENDING,
       filters:  DEFAULT_FILTERS,
+      userText: text.trim(),
     };
 
     try {
@@ -181,23 +154,35 @@ export function useChat() {
       if (recRaw) {
         try {
           const parsed = JSON.parse(recRaw) as {
-            spending?:             Partial<SpendingBreakdown> | null;
-            filters?:              Partial<FormFilters> | null;
-            annualIncome?:         number | null;
-            householdIncome?:      number | null;
+            cards?: GeminiCard[];
+            annualIncome?: number | null;
+            householdIncome?: number | null;
             estimatedCreditScore?: number | null;
-            cards?: {
-              name: string; purpose: string; description: string; visualConfig?: VisualConfig;
-            }[];
           };
 
-          setRecommendationData(toSubmission(parsed));
-
           if (parsed.cards && parsed.cards.length > 0) {
+            setResults(
+              parsed.cards.map((c, i) => ({
+                card: {
+                  id:             i,
+                  name:           c.name,
+                  issuer:         c.issuer         ?? "",
+                  annualFee:      c.annualFee       ?? 0,
+                  pointsCurrency: c.pointsCurrency  ?? "Cash Back",
+                  cardType:       c.cardType        ?? "visa",
+                  isPointsBased:  c.isPointsBased   ?? false,
+                },
+                breakdown:          c.breakdown         ?? [],
+                totalPointsEarned:  c.totalPointsEarned ?? 0,
+                totalValueCAD:      c.totalValueCAD      ?? 0,
+                netAnnualValue:     c.netAnnualValue     ?? 0,
+                eligibilityWarning: c.eligibilityWarning ?? undefined,
+              }))
+            );
             setArsenalCards(parsed.cards.map(c => ({
               name:         c.name,
-              purpose:      c.purpose     ?? "",
-              description:  c.description ?? "",
+              purpose:      c.purpose      ?? "",
+              description:  c.description  ?? "",
               visualConfig: c.visualConfig,
             })));
           }
@@ -226,7 +211,7 @@ export function useChat() {
     setMessages(prev => [...prev, { role: "model", content: text }]);
   }
 
-  const isDone = !!recommendationData;
+  const isDone = results.length > 0;
 
-  return { messages, isLoading, extractedData, recommendationData, arsenalCards, isDone, sendMessage, addBotMessage };
+  return { messages, isLoading, extractedData, results, arsenalCards, isDone, sendMessage, addBotMessage };
 }

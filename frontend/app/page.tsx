@@ -6,8 +6,8 @@ import ChatPanel from "@/app/components/ChatPanel";
 import LiveProfileSidebar from "@/app/components/LiveProfileSidebar";
 import ArsenalModal from "@/app/components/ArsenalModal";
 import { useProfile } from "@/context/ProfileContext";
-import { useRecommendations } from "@/hooks/useRecommendations";
 import { useChat } from "@/hooks/useChat";
+import type { ArsenalCard } from "@/hooks/useChat";
 import type { RecommendationResult } from "@/lib/api";
 
 // Dev-only mock data for the Arsenal skip tool.
@@ -38,7 +38,7 @@ const DEV_MOCK_RESULTS: RecommendationResult[] = [
   },
 ];
 
-const DEV_MOCK_ARSENAL_CARDS = [
+const DEV_MOCK_ARSENAL_CARDS: ArsenalCard[] = [
   {
     name: "Wealthsimple Cash Visa Prepaid",
     purpose: "Everyday No-Fee Shield",
@@ -91,25 +91,17 @@ const DEV_MOCK_ARSENAL_CARDS = [
 
 export default function Home() {
   const { activeProfile } = useProfile();
-  const { results, isCalculating, calculate } = useRecommendations();
-  const { messages, isLoading: isChatLoading, extractedData, recommendationData, arsenalCards, isDone, sendMessage, addBotMessage } = useChat();
+  const { messages, isLoading: isChatLoading, extractedData, results, arsenalCards, isDone, sendMessage, addBotMessage } = useChat();
 
   const [arsenalOpen, setArsenalOpen] = useState(false);
   const [devResults, setDevResults] = useState<RecommendationResult[] | null>(null);
 
-  // When Gemini completes, auto-fetch recommendations and open the Arsenal.
+  // Open the Arsenal modal once Gemini returns results.
   useEffect(() => {
-    if (recommendationData) {
-      calculate(recommendationData);
-    }
-  }, [recommendationData]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Open the Arsenal modal once results arrive from a chat-triggered calculation.
-  useEffect(() => {
-    if (results.length > 0 && recommendationData && !isCalculating) {
+    if (results.length > 0 && isDone) {
       setArsenalOpen(true);
     }
-  }, [results, isCalculating]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [results, isDone]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleCloseArsenal() {
     setArsenalOpen(false);
@@ -146,7 +138,7 @@ export default function Home() {
         <div className="mt-5 flex-1">
           <ChatPanel
             messages={messages}
-            isLoading={isChatLoading || isCalculating}
+            isLoading={isChatLoading}
             isDone={isDone}
             onSendMessage={sendMessage}
             hasCards={activeResults.length > 0}

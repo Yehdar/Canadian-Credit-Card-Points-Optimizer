@@ -1,47 +1,7 @@
 package com.creditoptimizer.db
 
-import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.javatime.timestamp
-
-object CreditCards : Table("credit_cards") {
-    val id                    = integer("id").autoIncrement()
-    val name                  = varchar("name", 100)
-    val issuer                = varchar("issuer", 100)
-    val annualFeeCad          = decimal("annual_fee_cad", 8, 2)
-    val pointsCurrency        = varchar("points_currency", 50)
-    val cpp                   = decimal("cpp", 6, 4)
-    val cardType              = varchar("card_type", 20)
-
-    // Benefit flags (added in V5)
-    val noForeignFee          = bool("no_foreign_fee")
-    val airportLounge         = bool("airport_lounge")
-    val priorityTravel        = bool("priority_travel")
-    val freeCheckedBag        = bool("free_checked_bag")
-
-    // Earn-rate multipliers applied when the matching user flag is set (added in V5)
-    val rogersBonusMultiplier = decimal("rogers_bonus_multiplier", 4, 2)
-    val amazonPrimeMultiplier = decimal("amazon_prime_multiplier", 4, 2)
-
-    // Metadata (added in V6)
-    val isPointsBased  = bool("is_points_based")
-
-    // Eligibility thresholds (added in V7); NULL means no minimum enforced
-    val minIncomePersonal  = integer("min_income_personal").nullable()
-    val minIncomeHousehold = integer("min_income_household").nullable()
-    val minCreditScore     = integer("min_credit_score").nullable()
-
-    override val primaryKey = PrimaryKey(id)
-}
-
-object CardEarnRates : Table("card_earn_rates") {
-    val id       = integer("id").autoIncrement()
-    val cardId   = integer("card_id").references(CreditCards.id)
-    val category = varchar("category", 30)
-    val earnRate = decimal("earn_rate", 6, 2)
-
-    override val primaryKey = PrimaryKey(id)
-}
 
 // IntIdTable provides `id` (auto-increment PK) and `primaryKey` automatically.
 object SpendingProfiles : IntIdTable("spending_profiles") {

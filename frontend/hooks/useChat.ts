@@ -95,7 +95,7 @@ const DEFAULT_FILTERS: FormFilters = {
 
 const GREETING: ChatMessage = {
   role: "model",
-  content: "Ready to build your card strategy! Type **arsenal** for a multi-card setup that maximises every category, or **one card** to find your single best match.",
+  content: "Ready to join millions of Canadians by building your credit card arsenal and optimizing points? \n\n To start, reference the spending categories to the right and type in as much information you can about your spending habits. \n Then let us know whether you'd prefer a single card or a multi-card setup!",
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

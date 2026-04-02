@@ -106,7 +106,7 @@ export default function LiveProfileSidebar({ extractedData, activeProfile }: Liv
     <div className="h-full overflow-y-auto px-6 py-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-[13px] font-semibold text-black dark:text-[#E8EAED]">Live Profile</h2>
+        <h2 className="text-[13px] font-semibold text-black dark:text-[#E8EAED]">Spending Categories</h2>
         {activeProfile && (
           <span className="rounded-full border border-[#DADCE0] bg-white px-2.5 py-0.5 text-[10px] font-medium text-[#5F6368] dark:border-[#3C4043] dark:bg-[#292A2D] dark:text-[#9AA0A6]">
             {activeProfile.name}

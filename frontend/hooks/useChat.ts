@@ -123,8 +123,12 @@ export function useChat() {
   async function sendMessage(text: string) {
     if (!text.trim() || isLoading) return;
 
-    // User is continuing after results — clear everything and start fresh.
+    // User is continuing after results — clear everything and start fresh,
+    // but preserve the previous user message as spending context for Gemini.
+    let spendingContext = "";
     if (results.length > 0) {
+      const prevUserMsg = messages.find(m => m.role === "user");
+      if (prevUserMsg) spendingContext = prevUserMsg.content;
       setResults([]);
       setArsenalCards([]);
       setMessages([]);
@@ -140,11 +144,17 @@ export function useChat() {
         ? "arsenal"
         : "simple";
 
+    // If this is a follow-up, prepend the previous spending profile so Gemini
+    // has the data it needs to calculate point values.
+    const effectiveUserText = spendingContext
+      ? `Context from user's previous message (spending profile):\n${spendingContext}\n\nNew request: ${text.trim()}`
+      : text.trim();
+
     const request: OptimizeRequest = {
       strategy,
       spending: EMPTY_SPENDING,
       filters:  DEFAULT_FILTERS,
-      userText: text.trim(),
+      userText: effectiveUserText,
     };
 
     try {

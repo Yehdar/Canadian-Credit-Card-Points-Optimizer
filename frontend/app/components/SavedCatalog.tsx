@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Bookmark } from "lucide-react";
+import { Bookmark, Info, Receipt } from "lucide-react";
 import type { SavedCard, CategoryBreakdown } from "@/lib/api";
 import { VisaMark, MastercardMark, AmexMark } from "./NetworkMarks";
 
@@ -51,11 +51,9 @@ function topSpendCategories(breakdown: CategoryBreakdown[]): CategoryBreakdown[]
 function CardTile({
   card,
   onView,
-  onReSync,
 }: {
   card: SavedCard;
   onView: () => void;
-  onReSync: () => void;
 }) {
   const baseColor = card.visualConfig?.baseColor ?? "#333333";
   const isPositive = card.netAnnualValue >= 0;
@@ -107,30 +105,25 @@ function CardTile({
       <div className="flex flex-1 flex-col gap-2.5 bg-white px-3.5 py-3 dark:bg-[#2D2E30]">
         {top2.length > 0 && (
           <p className="text-[10px] leading-snug text-[#5F6368] dark:text-[#9AA0A6] line-clamp-1">
-            {top2.map(b => `${CATEGORY_LABELS[b.category] ?? b.category} ${formatCAD(b.spent)}`).join(" · ")}/mo
+            {top2.map(b => `${CATEGORY_LABELS[b.category] ?? b.category} ${formatCAD(b.spent / 12)}`).join(" · ")}/mo
           </p>
         )}
-
-        <div className="flex gap-2">
-          <button
-            onClick={onView}
-            className="flex-1 rounded-lg border border-[#DADCE0] bg-white px-2 py-1.5 text-[11px] font-medium text-[#202124] transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:bg-[#292A2D] dark:text-[#E8EAED] dark:hover:bg-[#3C4043]"
-          >
-            View
-          </button>
-          <button
-            onClick={onReSync}
-            className="flex-1 rounded-lg border border-[#1A73E8]/30 bg-[#E8F0FE] px-2 py-1.5 text-[11px] font-medium text-[#1A73E8] transition hover:bg-[#D2E3FC] dark:border-[#1A73E8]/40 dark:bg-[#1A3A6B]/40 dark:text-[#7BAAF7] dark:hover:bg-[#1A3A6B]/60"
-          >
-            Re-Sync
-          </button>
-        </div>
+        <button
+          onClick={onView}
+          className="w-full rounded-lg border border-[#DADCE0] bg-white px-2 py-1.5 text-[11px] font-medium text-[#202124] transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:bg-[#292A2D] dark:text-[#E8EAED] dark:hover:bg-[#3C4043]"
+        >
+          View
+        </button>
       </div>
     </div>
   );
 }
 
 export default function SavedCatalog({ savedCards, onClose, onReSyncCard, onViewCard }: SavedCatalogProps) {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const profileBreakdown = savedCards[0]?.breakdown?.filter(b => b.spent > 0) ?? [];
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -159,6 +152,7 @@ export default function SavedCatalog({ savedCards, onClose, onReSyncCard, onView
       >
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-[#DADCE0] bg-white px-6 py-4 dark:border-[#3C4043] dark:bg-[#292A2D]">
+          {/* Left: title */}
           <div className="flex items-center gap-2.5">
             <Bookmark className="h-4 w-4 text-[#1A73E8]" />
             <div>
@@ -170,15 +164,73 @@ export default function SavedCatalog({ savedCards, onClose, onReSyncCard, onView
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close saved catalog"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[#5F6368] transition hover:bg-[#F1F3F4] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
-            </svg>
-          </button>
+
+          {/* Right: Re-Sync + info + close */}
+          <div className="flex items-center gap-2">
+            {savedCards.length > 0 && (
+              <>
+                {/* Spending Profile — standalone */}
+                <div className="relative">
+                  <button
+                    onClick={() => { setProfileOpen(v => !v); setInfoOpen(false); }}
+                    className="flex items-center gap-1.5 rounded-lg border border-[#DADCE0] px-3 py-1.5 text-[12px] font-medium text-[#5F6368] transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
+                  >
+                    Spending Profile
+                    <Receipt className="h-3.5 w-3.5" />
+                  </button>
+                  {profileOpen && (
+                    <div className="absolute left-0 top-[calc(100%+6px)] z-10 w-56 rounded-xl border border-[#DADCE0] bg-white px-4 py-3 shadow-lg dark:border-[#3C4043] dark:bg-[#292A2D]">
+                      <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">Spending Profile</p>
+                      <div className="space-y-1">
+                        {profileBreakdown.map(b => (
+                          <p key={b.category} className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
+                            <span className="font-semibold text-[#202124] dark:text-[#E8EAED]">
+                              {CATEGORY_LABELS[b.category] ?? b.category}:
+                            </span>{" "}
+                            {formatCAD(b.spent / 12)}/mo
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Re-Sync + Info — connected group */}
+                <div className="relative flex mr-2">
+                  <button
+                    onClick={() => { onReSyncCard(savedCards[0]); onClose(); }}
+                    className="flex items-center gap-1.5 rounded-l-lg border border-r-0 border-[#1A73E8]/30 bg-[#E8F0FE] px-3 py-1.5 text-[12px] font-medium text-[#1A73E8] transition hover:bg-[#D2E3FC] dark:border-[#1A73E8]/40 dark:bg-[#1A3A6B]/40 dark:text-[#7BAAF7] dark:hover:bg-[#1A3A6B]/60"
+                  >
+                    Re-Sync
+                  </button>
+                <button
+                  onClick={() => setInfoOpen(v => !v)}
+                  aria-label="What is Re-Sync?"
+                  className="flex items-center justify-center rounded-r-lg border border-[#1A73E8]/30 bg-[#E8F0FE] px-2 py-1.5 text-[#1A73E8] transition hover:bg-[#D2E3FC] dark:border-[#1A73E8]/40 dark:bg-[#1A3A6B]/40 dark:text-[#7BAAF7] dark:hover:bg-[#1A3A6B]/60"
+                >
+                  <Info className="h-3.5 w-3.5" />
+                </button>
+                {infoOpen && (
+                  <div className="absolute right-0 top-[calc(100%+6px)] z-10 w-64 rounded-xl border border-[#DADCE0] bg-white px-4 py-3 shadow-lg dark:border-[#3C4043] dark:bg-[#292A2D]">
+                    <p className="text-[12px] leading-relaxed text-[#5F6368] dark:text-[#9AA0A6]">
+                      Re-Sync answers &ldquo;given this same spending profile, what would Gemini recommend today?&rdquo;
+                    </p>
+                  </div>
+                )}
+                </div>
+              </>
+            )}
+
+            <button
+              onClick={onClose}
+              aria-label="Close saved catalog"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[#5F6368] transition hover:bg-[#F1F3F4] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -198,7 +250,6 @@ export default function SavedCatalog({ savedCards, onClose, onReSyncCard, onView
                   key={card.name}
                   card={card}
                   onView={() => onViewCard(card)}
-                  onReSync={() => { onReSyncCard(card); onClose(); }}
                 />
               ))}
             </div>

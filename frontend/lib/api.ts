@@ -29,6 +29,35 @@ export interface RecommendationResult {
   eligibilityWarning?: string;
 }
 
+export interface SavedCardVisualConfig {
+  baseColor:   string;
+  metalness:   number;
+  roughness:   number;
+  finish:      "matte" | "glossy" | "brushed_metal";
+  brandDomain: string;
+  companyName: string;
+  network:     "visa" | "mastercard" | "amex";
+  cardNumber:  string;
+  isMetal:     boolean;
+}
+
+export interface SavedCard {
+  name:               string;
+  issuer:             string;
+  annualFee:          number;
+  pointsCurrency:     string;
+  cardType:           string;
+  isPointsBased:      boolean;
+  breakdown:          CategoryBreakdown[];
+  totalPointsEarned:  number;
+  totalValueCAD:      number;
+  netAnnualValue:     number;
+  eligibilityWarning?: string;
+  purpose:            string;
+  description:        string;
+  visualConfig?:      SavedCardVisualConfig;
+}
+
 export interface SpendingBreakdown {
   // Original 8 categories
   groceries: number;
@@ -66,6 +95,28 @@ export interface FormFilters {
   };
 }
 
+export interface ExtractedData {
+  spending: {
+    groceries: number | null; dining: number | null; gas: number | null;
+    travel: number | null; entertainment: number | null; subscriptions: number | null;
+    transit: number | null; pharmacy: number | null; onlineShopping: number | null;
+    homeImprovement: number | null; canadianTirePartners: number | null;
+    foreignPurchases: number | null; other: number | null;
+  } | null;
+  filters: {
+    rewardType: RewardType | null; feePreference: FeePreference | null;
+    rogersOwner: boolean | null; amazonPrime: boolean | null;
+    institutions: string[] | null; networks: CardNetwork[] | null;
+    benefits: {
+      noForeignFee: boolean | null; airportLounge: boolean | null;
+      priorityTravel: boolean | null; freeCheckedBag: boolean | null;
+    } | null;
+  } | null;
+  annualIncome: number | null;
+  householdIncome: number | null;
+  estimatedCreditScore: number | null;
+}
+
 export interface SpendingFormSubmission {
   spending:             SpendingBreakdown;
   filters:              FormFilters;
@@ -78,7 +129,9 @@ export interface Profile {
   id: number;
   name: string;
   profileType: ProfileType;
+  extractedSnapshot?: ExtractedData;
   spending: SpendingBreakdown;
+  savedCards: SavedCard[] | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -93,6 +146,8 @@ export interface UpdateProfilePayload {
   name?: string;
   profileType?: ProfileType;
   spending?: SpendingBreakdown;
+  savedCards?: SavedCard[];
+  extractedSnapshot?: ExtractedData;
 }
 
 export async function fetchProfiles(): Promise<Profile[]> {
@@ -126,7 +181,7 @@ export async function deleteProfile(id: number): Promise<void> {
   if (!res.ok) throw new Error(`Failed to delete profile: ${res.status}`);
 }
 
-// ── Chat ──────────────────────────────────────────────────────────────────────
+// ── Chat / Optimizer ──────────────────────────────────────────────────────────
 
 export interface ChatMessage {
   role: "user" | "model";
@@ -138,13 +193,24 @@ export interface ChatResponse {
   isDone: boolean;
 }
 
-export async function sendChatMessage(messages: ChatMessage[]): Promise<ChatResponse> {
+/** Shape sent to POST /api/chat for single-shot card optimization. */
+export interface OptimizeRequest {
+  strategy: string;           // "simple" | "arsenal"
+  spending: SpendingBreakdown;
+  filters: FormFilters;
+  annualIncome?: number;
+  householdIncome?: number;
+  estimatedCreditScore?: number;
+  userText?: string;          // Raw chat message — Gemini extracts spending/prefs from this
+}
+
+export async function sendOptimizeRequest(request: OptimizeRequest): Promise<ChatResponse> {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify(request),
   });
-  if (!res.ok) throw new Error(`Chat request failed: ${res.status}`);
+  if (!res.ok) throw new Error(`Optimize request failed: ${res.status}`);
   return res.json();
 }
 

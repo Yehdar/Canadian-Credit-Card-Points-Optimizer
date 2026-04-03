@@ -14,8 +14,10 @@ import {
   fetchProfiles,
   updateProfile as apiUpdate,
   type CreateProfilePayload,
+  type ExtractedData,
   type Profile,
   type ProfileType,
+  type SavedCard,
   type SpendingBreakdown,
 } from "@/lib/api";
 
@@ -25,6 +27,7 @@ interface ProfileContextValue {
   setActiveProfile: (profile: Profile | null) => void;
   createProfile: (name: string, type: ProfileType, spending: SpendingBreakdown) => Promise<void>;
   saveActiveProfileSpending: (spending: SpendingBreakdown) => Promise<void>;
+  saveCardsToProfile: (cards: SavedCard[], snapshot?: ExtractedData | null, spending?: SpendingBreakdown) => Promise<void>;
   removeProfile: (id: number) => Promise<void>;
   isLoadingProfiles: boolean;
 }
@@ -67,6 +70,20 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     [activeProfile]
   );
 
+  const saveCardsToProfile = useCallback(
+    async (cards: SavedCard[], snapshot?: ExtractedData | null, spending?: SpendingBreakdown) => {
+      if (!activeProfile) return;
+      const updated = await apiUpdate(activeProfile.id, {
+        savedCards: cards,
+        ...(snapshot ? { extractedSnapshot: snapshot } : {}),
+        ...(spending ? { spending } : {}),
+      });
+      setProfiles((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      setActiveProfile(updated);
+    },
+    [activeProfile]
+  );
+
   const removeProfile = useCallback(
     async (id: number) => {
       await apiDelete(id);
@@ -88,6 +105,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         setActiveProfile,
         createProfile,
         saveActiveProfileSpending,
+        saveCardsToProfile,
         removeProfile,
         isLoadingProfiles,
       }}

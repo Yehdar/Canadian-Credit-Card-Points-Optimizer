@@ -1,45 +1,86 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { sendChatMessage } from "@/lib/api";
-import type { ChatMessage, SpendingFormSubmission, CardNetwork, RewardType, FeePreference } from "@/lib/api";
+import { useState } from "react";
+import { sendOptimizeRequest } from "@/lib/api";
+import type {
+  ChatMessage,
+  SpendingBreakdown,
+  FormFilters,
+  CardNetwork,
+  RewardType,
+  FeePreference,
+  OptimizeRequest,
+  RecommendationResult,
+  SavedCard,
+  ExtractedData,
+} from "@/lib/api";
 
-// Partial representation of extracted data during the conversation.
-// Fields are null until Gemini has gathered that information.
-export interface ExtractedData {
-  spending: {
-    groceries: number | null;
-    dining: number | null;
-    gas: number | null;
-    travel: number | null;
-    entertainment: number | null;
-    subscriptions: number | null;
-    transit: number | null;
-    pharmacy: number | null;
-    onlineShopping: number | null;
-    homeImprovement: number | null;
-    canadianTirePartners: number | null;
-    foreignPurchases: number | null;
-    other: number | null;
-  } | null;
-  filters: {
-    rewardType: RewardType | null;
-    feePreference: FeePreference | null;
-    rogersOwner: boolean | null;
-    amazonPrime: boolean | null;
-    institutions: string[] | null;
-    networks: CardNetwork[] | null;
-    benefits: {
-      noForeignFee: boolean | null;
-      airportLounge: boolean | null;
-      priorityTravel: boolean | null;
-      freeCheckedBag: boolean | null;
-    } | null;
-  } | null;
-  annualIncome: number | null;
-  householdIncome: number | null;
-  estimatedCreditScore: number | null;
+export type { ExtractedData };
+
+// Visual metadata for 3D card rendering, emitted by Gemini per card.
+export interface VisualConfig {
+  baseColor: string;
+  metalness: number;
+  roughness: number;
+  finish: "matte" | "glossy" | "brushed_metal";
+  brandDomain: string;
+  companyName: string;
+  network: "visa" | "mastercard" | "amex";
+  cardNumber: string;
+  isMetal: boolean;
 }
+
+// A single card in the Arsenal with Gemini-authored purpose and description.
+export interface ArsenalCard {
+  name: string;
+  purpose: string;
+  description: string;
+  visualConfig?: VisualConfig;
+}
+
+// Full card data returned by Gemini, including calculated values.
+interface GeminiCard {
+  name: string;
+  issuer: string;
+  annualFee: number;
+  pointsCurrency: string;
+  cardType: string;
+  isPointsBased: boolean;
+  breakdown: Array<{ category: string; spent: number; pointsEarned: number; valueCAD: number }>;
+  totalPointsEarned: number;
+  totalValueCAD: number;
+  netAnnualValue: number;
+  eligibilityWarning?: string | null;
+  purpose: string;
+  description: string;
+  visualConfig?: VisualConfig;
+}
+
+
+// ── Defaults ──────────────────────────────────────────────────────────────────
+
+const EMPTY_SPENDING: SpendingBreakdown = {
+  groceries: 0, dining: 0, gas: 0, travel: 0, entertainment: 0,
+  subscriptions: 0, transit: 0, other: 0, pharmacy: 0,
+  onlineShopping: 0, homeImprovement: 0, canadianTirePartners: 0, foreignPurchases: 0,
+};
+
+const DEFAULT_FILTERS: FormFilters = {
+  rewardType: "both",
+  feePreference: "include_fee",
+  rogersOwner: false,
+  amazonPrime: false,
+  institutions: [],
+  networks: ["visa", "mastercard", "amex"],
+  benefits: { noForeignFee: false, airportLounge: false, priorityTravel: false, freeCheckedBag: false },
+};
+
+const GREETING: ChatMessage = {
+  role: "model",
+  content: "Ready to join millions of Canadians by building your credit card arsenal and optimizing points? \n\n To start, reference the spending categories to the right and type in as much information you can about your spending habits. \n\n Then when the green button lights on, you can press it and will provide with what cards we believe are right for you!",
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function extractTag(text: string, tag: string): string | null {
   const match = text.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`));
@@ -47,134 +88,130 @@ function extractTag(text: string, tag: string): string | null {
 }
 
 function stripTags(text: string): string {
-  return text
-    .replace(/<extracted_data>[\s\S]*?<\/extracted_data>/g, "")
-    .replace(/<recommendation_data>[\s\S]*?<\/recommendation_data>/g, "")
-    .trim();
+  return text.replace(/<recommendation_data>[\s\S]*?<\/recommendation_data>/g, "").trim();
 }
 
-function parseExtractedData(text: string): ExtractedData | null {
-  const raw = extractTag(text, "extracted_data");
-  if (!raw) return null;
+function stripExtractTag(text: string): string {
+  return text.replace(/<extracted_data>[\s\S]*?<\/extracted_data>/g, "").trim();
+}
+
+function toSpendingBreakdown(spending: ExtractedData["spending"]): SpendingBreakdown {
+  if (!spending) return EMPTY_SPENDING;
+  return {
+    groceries:            spending.groceries            ?? 0,
+    dining:               spending.dining               ?? 0,
+    gas:                  spending.gas                  ?? 0,
+    travel:               spending.travel               ?? 0,
+    entertainment:        spending.entertainment        ?? 0,
+    subscriptions:        spending.subscriptions        ?? 0,
+    transit:              spending.transit              ?? 0,
+    other:                spending.other                ?? 0,
+    pharmacy:             spending.pharmacy             ?? 0,
+    onlineShopping:       spending.onlineShopping       ?? 0,
+    homeImprovement:      spending.homeImprovement      ?? 0,
+    canadianTirePartners: spending.canadianTirePartners ?? 0,
+    foreignPurchases:     spending.foreignPurchases     ?? 0,
+  };
+}
+
+function toFormFilters(filters: ExtractedData["filters"]): FormFilters {
+  if (!filters) return DEFAULT_FILTERS;
+  return {
+    rewardType:    (filters.rewardType    ?? DEFAULT_FILTERS.rewardType) as RewardType,
+    feePreference: (filters.feePreference ?? DEFAULT_FILTERS.feePreference) as FeePreference,
+    rogersOwner:   filters.rogersOwner   ?? false,
+    amazonPrime:   filters.amazonPrime   ?? false,
+    institutions:  filters.institutions  ?? [],
+    networks:      (filters.networks     ?? DEFAULT_FILTERS.networks) as CardNetwork[],
+    benefits: {
+      noForeignFee:   filters.benefits?.noForeignFee   ?? false,
+      airportLounge:  filters.benefits?.airportLounge  ?? false,
+      priorityTravel: filters.benefits?.priorityTravel ?? false,
+      freeCheckedBag: filters.benefits?.freeCheckedBag ?? false,
+    },
+  };
+}
+
+function parseGeminiCards(recRaw: string): { results: RecommendationResult[]; arsenalCards: ArsenalCard[] } | null {
   try {
-    return JSON.parse(raw) as ExtractedData;
+    const parsed = JSON.parse(recRaw) as {
+      cards?: GeminiCard[];
+      annualIncome?: number | null;
+      householdIncome?: number | null;
+      estimatedCreditScore?: number | null;
+    };
+    if (!parsed.cards || parsed.cards.length === 0) return null;
+    return {
+      results: parsed.cards.map((c, i) => ({
+        card: {
+          id:             i,
+          name:           c.name,
+          issuer:         c.issuer         ?? "",
+          annualFee:      c.annualFee       ?? 0,
+          pointsCurrency: c.pointsCurrency  ?? "Cash Back",
+          cardType:       c.cardType        ?? "visa",
+          isPointsBased:  c.isPointsBased   ?? false,
+        },
+        breakdown:          c.breakdown         ?? [],
+        totalPointsEarned:  c.totalPointsEarned ?? 0,
+        totalValueCAD:      c.totalValueCAD      ?? 0,
+        netAnnualValue:     c.netAnnualValue     ?? 0,
+        eligibilityWarning: c.eligibilityWarning ?? undefined,
+      })),
+      arsenalCards: parsed.cards.map(c => ({
+        name:         c.name,
+        purpose:      c.purpose      ?? "",
+        description:  c.description  ?? "",
+        visualConfig: c.visualConfig,
+      })),
+    };
   } catch {
     return null;
   }
 }
 
-// Convert ExtractedData (with nulls) to a complete SpendingFormSubmission for the API.
-function toSubmission(data: ExtractedData): SpendingFormSubmission {
-  const s = data.spending;
-  const f = data.filters;
-  const b = f?.benefits;
-  return {
-    spending: {
-      groceries:             s?.groceries             ?? 0,
-      dining:                s?.dining                ?? 0,
-      gas:                   s?.gas                   ?? 0,
-      travel:                s?.travel                ?? 0,
-      entertainment:         s?.entertainment         ?? 0,
-      subscriptions:         s?.subscriptions         ?? 0,
-      transit:               s?.transit               ?? 0,
-      other:                 s?.other                 ?? 0,
-      pharmacy:              s?.pharmacy              ?? 0,
-      onlineShopping:        s?.onlineShopping        ?? 0,
-      homeImprovement:       s?.homeImprovement       ?? 0,
-      canadianTirePartners:  s?.canadianTirePartners  ?? 0,
-      foreignPurchases:      s?.foreignPurchases      ?? 0,
-    },
-    filters: {
-      rewardType:    f?.rewardType    ?? "both",
-      feePreference: f?.feePreference ?? "include_fee",
-      rogersOwner:   f?.rogersOwner   ?? false,
-      amazonPrime:   f?.amazonPrime   ?? false,
-      institutions:  f?.institutions  ?? [],
-      networks:      f?.networks      ?? ["visa", "mastercard", "amex"],
-      benefits: {
-        noForeignFee:   b?.noForeignFee   ?? false,
-        airportLounge:  b?.airportLounge  ?? false,
-        priorityTravel: b?.priorityTravel ?? false,
-        freeCheckedBag: b?.freeCheckedBag ?? false,
-      },
-    },
-    annualIncome:          data.annualIncome          ?? undefined,
-    householdIncome:       data.householdIncome       ?? undefined,
-    estimatedCreditScore:  data.estimatedCreditScore  ?? undefined,
-  };
-}
+// ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [messages, setMessages]           = useState<ChatMessage[]>([GREETING]);
+  const [isLoading, setIsLoading]         = useState(false);
+  const [results, setResults]             = useState<RecommendationResult[]>([]);
+  const [arsenalCards, setArsenalCards]   = useState<ArsenalCard[]>([]);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
-  const [recommendationData, setRecommendationData] = useState<SpendingFormSubmission | null>(null);
-
-  // Tracks the full conversation history sent to the API (includes the hidden starter message).
-  const apiMessagesRef = useRef<ChatMessage[]>([]);
-  const initializedRef = useRef(false);
-
-  useEffect(() => {
-    if (!initializedRef.current) {
-      initializedRef.current = true;
-      initChat();
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function initChat() {
-    setIsLoading(true);
-    try {
-      // Send a silent starter so Gemini has a user turn to respond to.
-      // This message is NOT added to the display state.
-      const starter: ChatMessage = { role: "user", content: "Hello, I'd like to find the best credit card for me." };
-      apiMessagesRef.current = [starter];
-
-      const response = await sendChatMessage(apiMessagesRef.current);
-      const cleanText = stripTags(response.message);
-      const extracted = parseExtractedData(response.message);
-      if (extracted) setExtractedData(extracted);
-
-      const modelMsg: ChatMessage = { role: "model", content: cleanText };
-      apiMessagesRef.current = [...apiMessagesRef.current, modelMsg];
-      setMessages([modelMsg]);
-    } catch {
-      setMessages([{ role: "model", content: "Hi! I'm having trouble connecting right now. Please check that the backend is running and your Gemini API key is set." }]);
-    } finally {
-      setIsLoading(false);
-    }
-  }
 
   async function sendMessage(text: string) {
     if (!text.trim() || isLoading) return;
 
     const userMsg: ChatMessage = { role: "user", content: text.trim() };
-    const newApiMessages = [...apiMessagesRef.current, userMsg];
-    apiMessagesRef.current = newApiMessages;
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
-    try {
-      const response = await sendChatMessage(newApiMessages);
-      const cleanText = stripTags(response.message);
-      const extracted = parseExtractedData(response.message);
-      if (extracted) setExtractedData(extracted);
+    // Build cumulative context: all prior user messages + this one
+    const allUserMessages = [...messages.filter(m => m.role === "user"), userMsg]
+      .map(m => m.content)
+      .join("\n");
 
-      if (response.isDone) {
-        const recRaw = extractTag(response.message, "recommendation_data");
-        if (recRaw) {
-          try {
-            const parsed = JSON.parse(recRaw) as ExtractedData;
-            setRecommendationData(toSubmission(parsed));
-          } catch {
-            // Fall back to converting the last extractedData
-            if (extracted) setRecommendationData(toSubmission(extracted));
-          }
-        }
+    const request: OptimizeRequest = {
+      strategy: "extract",
+      spending: EMPTY_SPENDING,
+      filters:  DEFAULT_FILTERS,
+      userText: allUserMessages,
+    };
+
+    try {
+      const response = await sendOptimizeRequest(request);
+      const extractedRaw = extractTag(response.message, "extracted_data");
+
+      if (extractedRaw) {
+        try {
+          const parsed = JSON.parse(extractedRaw) as ExtractedData;
+          setExtractedData(parsed);
+        } catch { /* malformed JSON — keep previous extractedData */ }
       }
 
-      const modelMsg: ChatMessage = { role: "model", content: cleanText };
-      apiMessagesRef.current = [...apiMessagesRef.current, modelMsg];
-      setMessages(prev => [...prev, modelMsg]);
+      const displayText = stripExtractTag(response.message) ||
+        "Got it! Keep adding details or click **Get Cards Now** when ready.";
+      setMessages(prev => [...prev, { role: "model", content: displayText }]);
     } catch {
       setMessages(prev => [
         ...prev,
@@ -185,5 +222,137 @@ export function useChat() {
     }
   }
 
-  return { messages, isLoading, extractedData, recommendationData, sendMessage };
+  async function getCards() {
+    if (isLoading) return;
+    setResults([]);
+    setArsenalCards([]);
+    setIsLoading(true);
+
+    const allText = messages.map(m => m.content).join(" ").toLowerCase();
+    const strategy =
+      allText.includes("one card") || allText.includes("single card") ? "simple" : "arsenal";
+
+    const request: OptimizeRequest = {
+      strategy,
+      spending:             toSpendingBreakdown(extractedData?.spending ?? null),
+      filters:              toFormFilters(extractedData?.filters ?? null),
+      annualIncome:         extractedData?.annualIncome         ?? undefined,
+      householdIncome:      extractedData?.householdIncome      ?? undefined,
+      estimatedCreditScore: extractedData?.estimatedCreditScore ?? undefined,
+      userText: messages.filter(m => m.role === "user").map(m => m.content).join("\n"),
+    };
+
+    try {
+      const response = await sendOptimizeRequest(request);
+      const recRaw = extractTag(response.message, "recommendation_data");
+
+      if (recRaw) {
+        const parsed = parseGeminiCards(recRaw);
+        if (parsed) {
+          setResults(parsed.results);
+          setArsenalCards(parsed.arsenalCards);
+        }
+      }
+
+      const displayText = recRaw
+        ? "Your card strategy is ready — opening your Arsenal now!"
+        : stripTags(response.message) || "Couldn't generate a strategy. Please try again.";
+      setMessages(prev => [...prev, { role: "model", content: displayText }]);
+    } catch {
+      setMessages(prev => [
+        ...prev,
+        { role: "model", content: "Sorry, something went wrong. Please try again." },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  // Re-sync a saved card: uses the saved profile snapshot if available,
+  // otherwise falls back to reconstructing spending from the card's breakdown.
+  async function reSyncCard(card: SavedCard, snapshot?: ExtractedData | null) {
+    if (isLoading) return;
+
+    let resolvedExtracted: ExtractedData;
+    let contextMsg: ChatMessage;
+
+    if (snapshot?.spending) {
+      // Use the full saved context — spending, income, credit score, filters
+      resolvedExtracted = snapshot;
+      const sorted = Object.entries(snapshot.spending)
+        .filter(([, v]) => v !== null && v > 0)
+        .sort(([, a], [, b]) => (b as number) - (a as number));
+      const topSpends = sorted.map(([k, v]) => `${k} $${Math.round(v as number)}`).join(", ");
+      contextMsg = { role: "user", content: `Re-syncing arsenal using saved profile. Monthly spending: ${topSpends}` };
+    } else {
+      // Fallback: reconstruct spending from the card's annual breakdown → monthly
+      const spending: ExtractedData["spending"] = {
+        groceries: null, dining: null, gas: null, travel: null,
+        entertainment: null, subscriptions: null, transit: null, other: null,
+        pharmacy: null, onlineShopping: null, homeImprovement: null,
+        canadianTirePartners: null, foreignPurchases: null,
+      };
+      for (const b of card.breakdown ?? []) {
+        const key = b.category as keyof NonNullable<ExtractedData["spending"]>;
+        if (key in spending) {
+          (spending as Record<string, number | null>)[key] = b.spent / 12;
+        }
+      }
+      resolvedExtracted = { spending, filters: null, annualIncome: null, householdIncome: null, estimatedCreditScore: null };
+      const sorted = [...(card.breakdown ?? [])].sort((a, b) => b.spent - a.spent);
+      const topSpends = sorted.map(b => `${b.category} $${Math.round(b.spent / 12)}`).join(", ");
+      contextMsg = { role: "user", content: `Re-syncing arsenal. Monthly spending: ${topSpends}` };
+    }
+
+    setExtractedData(resolvedExtracted);
+    setMessages([GREETING, contextMsg]);
+    setResults([]);
+    setArsenalCards([]);
+
+    setIsLoading(true);
+    const request: OptimizeRequest = {
+      strategy: "arsenal",
+      spending: toSpendingBreakdown(resolvedExtracted.spending ?? null),
+      filters:  toFormFilters(resolvedExtracted.filters ?? null),
+      annualIncome:         resolvedExtracted.annualIncome         ?? undefined,
+      householdIncome:      resolvedExtracted.householdIncome      ?? undefined,
+      estimatedCreditScore: resolvedExtracted.estimatedCreditScore ?? undefined,
+      userText: contextMsg.content,
+    };
+
+    try {
+      const response = await sendOptimizeRequest(request);
+      const recRaw = extractTag(response.message, "recommendation_data");
+      if (recRaw) {
+        const parsed = parseGeminiCards(recRaw);
+        if (parsed) { setResults(parsed.results); setArsenalCards(parsed.arsenalCards); }
+      }
+      const displayText = recRaw
+        ? "Your card strategy is ready — opening your Arsenal now!"
+        : stripTags(response.message) || "Couldn't generate a strategy. Please try again.";
+      setMessages(prev => [...prev, { role: "model", content: displayText }]);
+    } catch {
+      setMessages(prev => [...prev, { role: "model", content: "Sorry, something went wrong. Please try again." }]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  // Called when the Arsenal modal closes — adds a follow-up prompt.
+  function addBotMessage(text: string) {
+    setMessages(prev => [...prev, { role: "model", content: text }]);
+  }
+
+  // Resets all chat state back to the initial greeting — call when switching profiles.
+  function resetChat() {
+    setMessages([GREETING]);
+    setResults([]);
+    setArsenalCards([]);
+    setExtractedData(null);
+    setIsLoading(false);
+  }
+
+  const isDone = results.length > 0;
+
+  return { messages, isLoading, extractedData, results, arsenalCards, isDone, sendMessage, getCards, reSyncCard, addBotMessage, resetChat };
 }

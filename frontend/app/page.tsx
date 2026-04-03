@@ -1,161 +1,290 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import SpendingForm from "@/app/components/SpendingForm";
-import ProfileSwitcher from "@/app/components/ProfileSwitcher";
-import CardResults from "@/app/components/CardResults";
-import SaveProfilePrompt from "@/app/components/SaveProfilePrompt";
+import { useEffect, useMemo, useState } from "react";
 import ChatPanel from "@/app/components/ChatPanel";
-import ExtractedDataSummary from "@/app/components/ExtractedDataSummary";
+import LiveProfileSidebar from "@/app/components/LiveProfileSidebar";
+import ArsenalModal from "@/app/components/ArsenalModal";
+import SavedCatalog from "@/app/components/SavedCatalog";
 import { useProfile } from "@/context/ProfileContext";
-import { useRecommendations } from "@/hooks/useRecommendations";
 import { useChat } from "@/hooks/useChat";
-import type { SpendingBreakdown, SpendingFormSubmission } from "@/lib/api";
+import type { ArsenalCard } from "@/hooks/useChat";
+import type { RecommendationResult, SavedCard, SpendingBreakdown } from "@/lib/api";
+
+// Dev-only mock data for the Arsenal skip tool.
+const DEV_MOCK_RESULTS: RecommendationResult[] = [
+  {
+    card: { id: 997, name: "Wealthsimple Cash Visa Prepaid", issuer: "Wealthsimple", annualFee: 0, pointsCurrency: "Cash Back", cardType: "visa", isPointsBased: false },
+    breakdown: [{ category: "other", spent: 2400, pointsEarned: 0, valueCAD: 24 }],
+    totalPointsEarned: 0,
+    totalValueCAD: 24,
+    netAnnualValue: 24,
+    eligibilityWarning: undefined,
+  },
+  {
+    card: { id: 998, name: "RBC Avion Visa Infinite", issuer: "RBC", annualFee: 120, pointsCurrency: "Avion Points", cardType: "visa", isPointsBased: true },
+    breakdown: [{ category: "travel", spent: 3600, pointsEarned: 7200, valueCAD: 108 }, { category: "dining", spent: 1200, pointsEarned: 1200, valueCAD: 18 }],
+    totalPointsEarned: 8400,
+    totalValueCAD: 126,
+    netAnnualValue: 6,
+    eligibilityWarning: undefined,
+  },
+  {
+    card: { id: 999, name: "Amex Platinum", issuer: "American Express", annualFee: 799, pointsCurrency: "Amex MR", cardType: "amex", isPointsBased: true },
+    breakdown: [{ category: "travel", spent: 6000, pointsEarned: 18000, valueCAD: 270 }, { category: "dining", spent: 3600, pointsEarned: 10800, valueCAD: 162 }, { category: "groceries", spent: 6000, pointsEarned: 6000, valueCAD: 90 }],
+    totalPointsEarned: 34800,
+    totalValueCAD: 522,
+    netAnnualValue: 222,
+    eligibilityWarning: undefined,
+  },
+];
+
+const DEV_MOCK_ARSENAL_CARDS: ArsenalCard[] = [
+  {
+    name: "Wealthsimple Cash Visa Prepaid",
+    purpose: "Everyday No-Fee Shield",
+    description: "Zero annual fee and flat cash back on all purchases make this the perfect fallback for anything outside your premium rewards cards.",
+    visualConfig: {
+      baseColor: "#111111",
+      metalness: 0.2,
+      roughness: 0.15,
+      finish: "glossy",
+      brandDomain: "wealthsimple.com",
+      companyName: "Wealthsimple",
+      network: "visa",
+      cardNumber: "1234 5678 9012 3456",
+      isMetal: false,
+    },
+  },
+  {
+    name: "RBC Avion Visa Infinite",
+    purpose: "Travel & Dining Powerhouse",
+    description: "Strong earn rates on travel and restaurants, plus flexible Avion points redemptions that keep your premium lifestyle covered.",
+    visualConfig: {
+      baseColor: "#00539B",
+      metalness: 0.2,
+      roughness: 0.15,
+      finish: "glossy",
+      brandDomain: "rbc.com",
+      companyName: "RBC",
+      network: "visa",
+      cardNumber: "1234 5678 9012 3456",
+      isMetal: false,
+    },
+  },
+  {
+    name: "Amex Platinum",
+    purpose: "Luxury Travel & Lounge Anchor",
+    description: "A premium metal card built for frequent travellers — lounges, travel credits, and high MR earn rates justify the fee for the right spender.",
+    visualConfig: {
+      baseColor: "#B0B0B0",
+      metalness: 0.9,
+      roughness: 0.4,
+      finish: "brushed_metal",
+      brandDomain: "americanexpress.com",
+      companyName: "Amex",
+      network: "amex",
+      cardNumber: "1234 5678 9012 3456",
+      isMetal: true,
+    },
+  },
+];
 
 export default function Home() {
-  const { activeProfile, saveActiveProfileSpending } = useProfile();
-  const { results, isCalculating, error, calculate, clearResults } = useRecommendations();
-  const { messages, isLoading: isChatLoading, extractedData, recommendationData, sendMessage } = useChat();
+  const { activeProfile, saveCardsToProfile } = useProfile();
+  const { messages, isLoading: isChatLoading, extractedData, results, arsenalCards, isDone, sendMessage, getCards, reSyncCard, addBotMessage, resetChat } = useChat();
 
-  const resultsRef = useRef<HTMLDivElement>(null);
+  const [arsenalOpen, setArsenalOpen] = useState(false);
+  const [devResults, setDevResults] = useState<RecommendationResult[] | null>(null);
+  const [savedCatalogOpen, setSavedCatalogOpen] = useState(false);
+  const [savedCardView, setSavedCardView] = useState<SavedCard | null>(null);
 
-  const [chatMode, setChatMode] = useState(true);
-  const [lastAnonymousSpending, setLastAnonymousSpending] =
-    useState<SpendingBreakdown | null>(null);
-
-  // Auto re-calculate when the active profile switches.
+  // Reset chat state when the active profile changes.
   useEffect(() => {
-    if (activeProfile) {
-      calculate({ spending: activeProfile.spending });
-      setLastAnonymousSpending(null);
-    } else {
-      clearResults();
-    }
+    resetChat();
+    setArsenalOpen(false);
+    setDevResults(null);
+    setSavedCatalogOpen(false);
+    setSavedCardView(null);
   }, [activeProfile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // When the chat completes and recommendation data is ready, trigger calculation.
+  // Open the Arsenal modal once Gemini returns results.
   useEffect(() => {
-    if (recommendationData) {
-      handleChatRecommendation(recommendationData);
+    if (results.length > 0 && isDone) {
+      setArsenalOpen(true);
     }
-  }, [recommendationData]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [results, isDone]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function handleChatRecommendation(submission: SpendingFormSubmission) {
-    calculate(submission);
-    if (resultsRef.current) {
-      resultsRef.current.scrollTop = 0;
-    }
+  function handleCloseArsenal() {
+    setArsenalOpen(false);
   }
 
-  function handleSubmit({ spending, filters, annualIncome, householdIncome, estimatedCreditScore }: SpendingFormSubmission) {
-    console.debug("[FindBestCards] submitting:", JSON.stringify({ spending, filters, annualIncome, householdIncome, estimatedCreditScore }));
-    if (!activeProfile) {
-      setLastAnonymousSpending(spending);
-    }
-    calculate({ spending, filters, annualIncome, householdIncome, estimatedCreditScore });
-    if (resultsRef.current) {
-      resultsRef.current.scrollTop = 0;
-    }
+  function handleSaveCards() {
+    if (!activeProfile) return;
+    const cards: SavedCard[] = activeResults.map((r) => {
+      const ac = activeArsenalCards.find((c) => c.name === r.card.name);
+      return {
+        name:               r.card.name,
+        issuer:             r.card.issuer,
+        annualFee:          r.card.annualFee,
+        pointsCurrency:     r.card.pointsCurrency,
+        cardType:           r.card.cardType,
+        isPointsBased:      r.card.isPointsBased,
+        breakdown:          r.breakdown,
+        totalPointsEarned:  r.totalPointsEarned,
+        totalValueCAD:      r.totalValueCAD,
+        netAnnualValue:     r.netAnnualValue,
+        eligibilityWarning: r.eligibilityWarning,
+        purpose:            ac?.purpose     ?? "",
+        description:        ac?.description ?? "",
+        visualConfig:       ac?.visualConfig,
+      };
+    });
+    // Convert monthly extractedData.spending → SpendingBreakdown for profile storage
+    const s = extractedData?.spending;
+    const spending: SpendingBreakdown | undefined = s ? {
+      groceries:            s.groceries            ?? 0,
+      dining:               s.dining               ?? 0,
+      gas:                  s.gas                  ?? 0,
+      travel:               s.travel               ?? 0,
+      entertainment:        s.entertainment        ?? 0,
+      subscriptions:        s.subscriptions        ?? 0,
+      transit:              s.transit              ?? 0,
+      other:                s.other                ?? 0,
+      pharmacy:             s.pharmacy             ?? 0,
+      onlineShopping:       s.onlineShopping       ?? 0,
+      homeImprovement:      s.homeImprovement      ?? 0,
+      canadianTirePartners: s.canadianTirePartners ?? 0,
+      foreignPurchases:     s.foreignPurchases     ?? 0,
+    } : undefined;
+
+    saveCardsToProfile(cards, extractedData, spending);
   }
 
-  const showSavePrompt = !activeProfile && results.length > 0 && lastAnonymousSpending !== null;
+  function handleReSyncCard(card: SavedCard) {
+    reSyncCard(card, activeProfile?.extractedSnapshot);
+  }
+
+  function handleViewSavedCard(card: SavedCard) {
+    setSavedCardView(card);
+    setSavedCatalogOpen(false);
+  }
+
+  function handleDevSkip() {
+    setDevResults(DEV_MOCK_RESULTS);
+    setArsenalOpen(true);
+  }
+
+  const activeResults = useMemo(() => {
+    const base = devResults ?? results;
+    if (arsenalCards.length > 0 && !devResults) {
+      const names = new Set(arsenalCards.map(c => c.name));
+      return base.filter(r => names.has(r.card.name));
+    }
+    return base;
+  }, [devResults, results, arsenalCards]);
+  const activeArsenalCards = devResults ? DEV_MOCK_ARSENAL_CARDS : arsenalCards;
+
+  const savedCardModalData = useMemo(() => {
+    if (!savedCardView) return null;
+    const result: RecommendationResult = {
+      card: {
+        id: 0,
+        name: savedCardView.name,
+        issuer: savedCardView.issuer,
+        annualFee: savedCardView.annualFee,
+        pointsCurrency: savedCardView.pointsCurrency,
+        cardType: savedCardView.cardType,
+        isPointsBased: savedCardView.isPointsBased,
+      },
+      breakdown: savedCardView.breakdown,
+      totalPointsEarned: savedCardView.totalPointsEarned,
+      totalValueCAD: savedCardView.totalValueCAD,
+      netAnnualValue: savedCardView.netAnnualValue,
+      eligibilityWarning: savedCardView.eligibilityWarning,
+    };
+    const arsenal: ArsenalCard = {
+      name: savedCardView.name,
+      purpose: savedCardView.purpose,
+      description: savedCardView.description,
+      visualConfig: savedCardView.visualConfig,
+    };
+    return { result, arsenal };
+  }, [savedCardView]);
 
   return (
     /*
       Mobile  : single column, standard page scroll
-      Desktop : fixed-height split pane — left fixed, right scrolls independently
+      Desktop : fixed-height split pane — left (60%) fixed, right (40%) scrolls independently
     */
     <div className="flex min-h-[calc(100vh-3.5rem)] flex-col bg-[#F8F9FA] dark:bg-[#202124] lg:min-h-0 lg:h-[calc(100vh-3.5rem)] lg:flex-row lg:overflow-hidden">
 
-      {/* ── Left pane — inputs ─────────────────────────────────────────── */}
-      <aside className="scroll-pane shrink-0 border-b border-[#DADCE0] bg-[#F8F9FA] px-6 py-6 dark:border-[#3C4043] dark:bg-[#202124] lg:w-2/5 lg:overflow-y-auto lg:border-b-0 lg:border-r">
-
-        <ProfileSwitcher />
-
-        {/* ── Mode toggle ── */}
-        <div className="mb-5 mt-5 flex items-center gap-1 rounded-lg border border-[#DADCE0] bg-white p-1 dark:border-[#3C4043] dark:bg-[#2D2E30]">
-          <TabButton active={chatMode} onClick={() => setChatMode(true)}>
-            <span className="mr-1.5">✦</span>Chat
-          </TabButton>
-          <TabButton active={!chatMode} onClick={() => setChatMode(false)}>
-            Manual Form
-          </TabButton>
-        </div>
-
-        {chatMode ? (
-          <>
-            <ChatPanel
-              messages={messages}
-              isLoading={isChatLoading}
-              isDone={!!recommendationData}
-              onSendMessage={sendMessage}
-            />
-            <ExtractedDataSummary
-              data={extractedData}
-              isDone={!!recommendationData}
-              onFindCards={() => {
-                if (recommendationData) handleChatRecommendation(recommendationData);
-              }}
-              onManualEntry={() => setChatMode(false)}
-            />
-          </>
-        ) : (
-          <SpendingForm
-            onSubmit={handleSubmit}
-            onSave={activeProfile ? saveActiveProfileSpending : undefined}
-            isLoading={isCalculating}
-            initialSpending={activeProfile?.spending}
-            activeProfileName={activeProfile?.name}
-          />
-        )}
-
-        {error && (
-          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
-            {error}
-          </div>
-        )}
+      {/* ── Left pane — chat ───────────────────────────────────────────── */}
+      <aside className="scroll-pane shrink-0 flex flex-col border-b border-[#DADCE0] bg-[#F8F9FA] px-6 py-6 dark:border-[#3C4043] dark:bg-[#202124] lg:w-3/5 lg:overflow-hidden lg:border-b-0 lg:border-r">
+        <ChatPanel
+          messages={messages}
+          isLoading={isChatLoading}
+          isDone={isDone}
+          onSendMessage={sendMessage}
+          hasCards={activeResults.length > 0}
+          onViewCards={() => setArsenalOpen(true)}
+          hasSavedCards={!!(activeProfile?.savedCards?.length)}
+          onViewSavedCards={() => setSavedCatalogOpen(true)}
+          onGetCards={getCards}
+          canGetCards={messages.some(m => m.role === "user")}
+        />
       </aside>
 
-      {/* ── Right pane — results ───────────────────────────────────────── */}
-      <main ref={resultsRef} className="scroll-pane flex-1 px-6 py-8 lg:overflow-y-auto">
-        {(results.length > 0 || isCalculating) ? (
-          <div className="space-y-6">
-            <CardResults results={results} isCalculating={isCalculating} />
-
-            {showSavePrompt && (
-              <SaveProfilePrompt
-                spending={lastAnonymousSpending!}
-                onSaved={() => setLastAnonymousSpending(null)}
-              />
-            )}
-          </div>
-        ) : (
-          /* Empty state — only rendered at lg+ where the pane has fixed height */
-          <div className="hidden h-full flex-col items-center justify-center lg:flex">
-            <p className="text-[13px] text-[#9AA0A6] dark:text-[#5F6368]">
-              {chatMode
-                ? <>Chat with <span className="font-medium text-black dark:text-[#E8EAED]">CardGenius</span> to find your best card.</>
-                : <>Enter your monthly spending and click{" "}<span className="font-medium text-black dark:text-[#E8EAED]">Find Best Cards</span>.</>
-              }
-            </p>
-          </div>
-        )}
+      {/* ── Right pane — live profile summary ─────────────────────────── */}
+      <main className="scroll-pane flex-1 border-t border-[#DADCE0] bg-white dark:border-[#3C4043] dark:bg-[#292A2D] lg:w-2/5 lg:flex-none lg:overflow-y-auto lg:border-t-0">
+        <LiveProfileSidebar
+          extractedData={extractedData}
+          activeProfile={activeProfile}
+        />
       </main>
-    </div>
-  );
-}
 
-function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex-1 rounded-md py-1.5 text-[13px] font-medium transition ${
-        active
-          ? "bg-[#1A73E8] text-white shadow-sm"
-          : "text-[#5F6368] hover:bg-[#F1F3F4] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
-      }`}
-    >
-      {children}
-    </button>
+      {/* ── Arsenal Modal ──────────────────────────────────────────────── */}
+      {arsenalOpen && activeResults.length > 0 && (
+        <ArsenalModal
+          results={activeResults}
+          arsenalCards={activeArsenalCards}
+          onClose={handleCloseArsenal}
+          onDevSkip={process.env.NODE_ENV === "development" ? handleDevSkip : undefined}
+          activeProfileName={activeProfile?.name ?? null}
+          onSaveCards={activeProfile ? handleSaveCards : null}
+        />
+      )}
+
+      {/* ── Saved Catalog Modal ────────────────────────────────────────── */}
+      {savedCatalogOpen && !!(activeProfile?.savedCards?.length) && (
+        <SavedCatalog
+          savedCards={activeProfile!.savedCards!}
+          onClose={() => setSavedCatalogOpen(false)}
+          onReSyncCard={handleReSyncCard}
+          onViewCard={handleViewSavedCard}
+          snapshot={activeProfile?.extractedSnapshot ?? null}
+        />
+      )}
+
+      {/* ── Single Saved Card 3D Preview ───────────────────────────────── */}
+      {savedCardModalData && (
+        <ArsenalModal
+          results={[savedCardModalData.result]}
+          arsenalCards={[savedCardModalData.arsenal]}
+          onClose={() => setSavedCardView(null)}
+          activeProfileName={null}
+          onSaveCards={null}
+        />
+      )}
+
+      {/* ── Dev skip button (development only) ────────────────────────── */}
+      {process.env.NODE_ENV === "development" && !arsenalOpen && (
+        <button
+          onClick={handleDevSkip}
+          className="fixed bottom-4 left-4 z-[60] rounded-lg border border-[#DADCE0] bg-white px-3 py-1.5 text-xs font-medium text-[#5F6368] shadow-sm transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:bg-[#292A2D] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
+        >
+          ⚡ dev: skip to arsenal
+        </button>
+      )}
+    </div>
   );
 }

@@ -1,16 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Bookmark, CreditCard } from "lucide-react";
 import type { ChatMessage } from "@/lib/api";
+import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 
 interface ChatPanelProps {
   messages: ChatMessage[];
   isLoading: boolean;
   isDone: boolean;
   onSendMessage: (text: string) => void;
+  hasCards?: boolean;
+  onViewCards?: () => void;
+  hasSavedCards?: boolean;
+  onViewSavedCards?: () => void;
+  onGetCards?: () => void;
+  canGetCards?: boolean;
 }
 
-export default function ChatPanel({ messages, isLoading, isDone, onSendMessage }: ChatPanelProps) {
+export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, hasCards, onViewCards, hasSavedCards, onViewSavedCards, onGetCards, canGetCards }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -22,7 +30,7 @@ export default function ChatPanel({ messages, isLoading, isDone, onSendMessage }
 
   function handleSend() {
     const text = input.trim();
-    if (!text || isLoading || isDone) return;
+    if (!text || isLoading) return;
     onSendMessage(text);
     setInput("");
     inputRef.current?.focus();
@@ -36,21 +44,35 @@ export default function ChatPanel({ messages, isLoading, isDone, onSendMessage }
   }
 
   return (
-    <div className="flex flex-col rounded-xl border border-[#DADCE0] bg-white dark:border-[#3C4043] dark:bg-[#2D2E30]">
+    <div className="flex flex-1 flex-col rounded-xl border border-[#DADCE0] bg-white min-h-0 dark:border-[#3C4043] dark:bg-[#2D2E30]">
 
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-[#DADCE0] px-4 py-3 dark:border-[#3C4043]">
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1A73E8] text-[11px] font-bold text-white">
-          CG
-        </div>
-        <div>
-          <p className="text-[13px] font-semibold text-[#202124] dark:text-[#E8EAED]">CardGenius</p>
-          <p className="text-[11px] text-[#5F6368] dark:text-[#9AA0A6]">AI Card Advisor</p>
+      <div className="flex items-center justify-between gap-2 border-b border-[#DADCE0] px-4 py-3 dark:border-[#3C4043]">
+        <ProfileSwitcher />
+        <div className="flex items-center gap-2">
+          {hasCards && onViewCards && (
+            <button
+              onClick={onViewCards}
+              className="flex items-center gap-1.5 rounded-lg border border-[#DADCE0] px-2.5 py-1.5 text-[11px] font-medium text-[#5F6368] transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
+            >
+              <CreditCard className="h-3.5 w-3.5" />
+              View Credit Cards
+            </button>
+          )}
+          {hasSavedCards && onViewSavedCards && (
+            <button
+              onClick={onViewSavedCards}
+              className="flex items-center gap-1.5 rounded-lg border border-[#DADCE0] px-2.5 py-1.5 text-[11px] font-medium text-[#5F6368] transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
+            >
+              <Bookmark className="h-3.5 w-3.5" />
+              Saved Cards
+            </button>
+          )}
         </div>
       </div>
 
       {/* Message list */}
-      <div className="flex h-[300px] flex-col gap-3 overflow-y-auto px-4 py-4 lg:h-[320px]">
+      <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4 min-h-0">
         {messages.length === 0 && !isLoading && (
           <div className="flex flex-1 items-center justify-center">
             <p className="text-[12px] text-[#9AA0A6] dark:text-[#5F6368]">Starting conversation…</p>
@@ -97,32 +119,35 @@ export default function ChatPanel({ messages, isLoading, isDone, onSendMessage }
 
       {/* Input row */}
       <div className="border-t border-[#DADCE0] px-3 py-3 dark:border-[#3C4043]">
-        {isDone ? (
-          <p className="text-center text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
-            Conversation complete — results shown below.
-          </p>
-        ) : (
-          <div className="flex items-center gap-2">
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isLoading}
-              placeholder="Type your answer…"
-              className="flex-1 rounded-full border border-[#DADCE0] bg-[#F8F9FA] px-4 py-2 text-[13px] text-[#202124] placeholder-[#9AA0A6] outline-none transition focus:border-[#1A73E8] focus:bg-white disabled:opacity-50 dark:border-[#3C4043] dark:bg-[#202124] dark:text-[#E8EAED] dark:placeholder-[#5F6368] dark:focus:bg-[#2D2E30]"
-            />
+        <div className="flex items-center gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isLoading}
+            placeholder="Type your answer…"
+            className="flex-1 rounded-full border border-[#DADCE0] bg-[#F8F9FA] px-4 py-2 text-[13px] text-[#202124] placeholder-[#9AA0A6] outline-none transition focus:border-[#1A73E8] focus:bg-white disabled:opacity-50 dark:border-[#3C4043] dark:bg-[#202124] dark:text-[#E8EAED] dark:placeholder-[#5F6368] dark:focus:bg-[#2D2E30]"
+          />
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || isLoading}
+            aria-label="Send message"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1A73E8] text-white transition hover:bg-[#1557B0] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <SendIcon />
+          </button>
+          {onGetCards && (
             <button
-              onClick={handleSend}
-              disabled={!input.trim() || isLoading}
-              aria-label="Send message"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1A73E8] text-white transition hover:bg-[#1557B0] disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={onGetCards}
+              disabled={!canGetCards || isLoading}
+              className="shrink-0 rounded-full bg-[#1A73E8] px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-[#1557B0] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <SendIcon />
+              Get Cards Now
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

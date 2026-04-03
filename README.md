@@ -7,7 +7,7 @@ An AI-powered application that maximizes credit card rewards for Canadians based
 | Tool | Version |
 |------|---------|
 | Node.js | 20+ |
-| JDK | 17+ |
+| JDK | 21+ |
 | PostgreSQL | 16+ |
 
 ---
@@ -36,8 +36,14 @@ net stop  postgresql-x64-16   # stop
 
 ### 2. Start the Backend (Ktor API)
 
+Add your Gemini API key to `backend/local.properties`:
+```
+geminiApiKey=<your_key>
+```
+Or set the `GEMINI_API_KEY` environment variable before running.
+
 ```bash
-cd api
+cd backend
 ./gradlew run
 ```
 
@@ -49,7 +55,7 @@ Health check: `GET http://localhost:8080/health`
 ### 3. Start the Frontend (Next.js)
 
 ```bash
-cd web
+cd frontend
 npm install   # first time only
 npm run dev
 ```
@@ -62,22 +68,23 @@ The web app will be available at `http://localhost:3000`.
 
 ```
 .
-├── web/                    # Next.js frontend (TypeScript, Tailwind CSS)
-│   ├── app/                # App Router pages and layouts
-│   └── ...
-├── api/                    # Ktor backend (Kotlin, Gradle)
+├── frontend/               # Next.js frontend (TypeScript, Tailwind CSS v4)
+│   ├── app/                # App Router pages, layouts, and components
+│   ├── context/            # ProfileContext, ThemeContext
+│   ├── hooks/              # useChat, useRecommendations
+│   └── lib/api.ts          # Shared types + fetch wrappers
+├── backend/                # Ktor backend (Kotlin, Gradle)
 │   ├── src/
 │   │   └── main/
 │   │       ├── kotlin/com/creditoptimizer/
 │   │       │   ├── Application.kt
-│   │       │   └── plugins/
-│   │       │       ├── Database.kt
-│   │       │       ├── Routing.kt
-│   │       │       └── Serialization.kt
+│   │       │   ├── dto/            # Dtos.kt, ProfileDtos.kt, ChatDtos.kt
+│   │       │   ├── service/        # PointsService, ProfileService, GeminiService
+│   │       │   └── plugins/        # Database.kt, Routing.kt, Serialization.kt
 │   │       └── resources/
 │   │           ├── application.conf
 │   │           ├── logback.xml
-│   │           └── db/migration/   # Flyway migrations go here
+│   │           └── db/migration/   # Flyway migrations (V1–V8)
 │   └── build.gradle.kts
 └── CLAUDE.md
 ```
@@ -113,7 +120,7 @@ The web app will be available at `http://localhost:3000`.
 
 ## Environment Variables
 
-The API reads configuration from `api/src/main/resources/application.conf`.
+The API reads configuration from `backend/src/main/resources/application.conf`.
 Override with environment variables at runtime:
 
 | Variable | Default | Description |
@@ -122,6 +129,7 @@ Override with environment variables at runtime:
 | `DATABASE_URL` | `jdbc:postgresql://localhost:5432/creditoptimizer` | JDBC connection string |
 | `DATABASE_USER` | `postgres` | Database username |
 | `DATABASE_PASSWORD` | `postgres` | Database password |
+| `GEMINI_API_KEY` | *(required)* | Gemini API key for the `/api/chat` endpoint |
 
 ---
 

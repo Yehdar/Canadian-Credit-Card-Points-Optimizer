@@ -2,12 +2,16 @@ package com.creditoptimizer.service
 
 import com.creditoptimizer.db.SpendingProfiles
 import com.creditoptimizer.dto.*
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.math.BigDecimal
 
 class ProfileService {
+
+    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     // -----------------------------------------------------------------------
     // Public API
@@ -87,6 +91,12 @@ class ProfileService {
             it[homeImprovement]       = merged.homeImprovement.toBigDecimal()
             it[canadianTirePartners]  = merged.canadianTirePartners.toBigDecimal()
             it[foreignPurchases]      = merged.foreignPurchases.toBigDecimal()
+            it[savedCardsJson]        = request.savedCards
+                ?.let { cards -> json.encodeToString(cards) }
+                ?: existing[savedCardsJson]   // preserve existing value if savedCards not supplied
+            it[extractedSnapshotJson] = request.extractedSnapshot
+                ?.let { snap -> json.encodeToString(snap) }
+                ?: existing[extractedSnapshotJson]
             // updated_at is handled by the DB trigger in V3 migration
         }
 
@@ -121,12 +131,16 @@ class ProfileService {
     )
 
     private fun ResultRow.toResponse() = ProfileResponse(
-        id          = this[SpendingProfiles.id].value,
-        name        = this[SpendingProfiles.name],
-        profileType = this[SpendingProfiles.profileType],
-        spending    = toSpendingBreakdown(),
-        createdAt   = this[SpendingProfiles.createdAt].toString(),
-        updatedAt   = this[SpendingProfiles.updatedAt].toString()
+        id                = this[SpendingProfiles.id].value,
+        name              = this[SpendingProfiles.name],
+        profileType       = this[SpendingProfiles.profileType],
+        spending          = toSpendingBreakdown(),
+        savedCards        = this[SpendingProfiles.savedCardsJson]
+            ?.let { raw -> runCatching { json.decodeFromString<List<SavedCardDto>>(raw) }.getOrNull() },
+        extractedSnapshot = this[SpendingProfiles.extractedSnapshotJson]
+            ?.let { raw -> runCatching { json.parseToJsonElement(raw) }.getOrNull() },
+        createdAt         = this[SpendingProfiles.createdAt].toString(),
+        updatedAt         = this[SpendingProfiles.updatedAt].toString(),
     )
 
     private fun Double.toBigDecimal(): BigDecimal = BigDecimal.valueOf(this)

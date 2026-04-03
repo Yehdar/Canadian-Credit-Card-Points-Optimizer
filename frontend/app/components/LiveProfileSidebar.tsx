@@ -86,7 +86,20 @@ export default function LiveProfileSidebar({ extractedData, activeProfile }: Liv
     const chatVal = extractedData?.spending?.[key];
     if (chatVal !== null && chatVal !== undefined) return formatCAD(chatVal) + "/mo";
     const profileVal = activeProfile?.spending?.[key as keyof typeof activeProfile.spending];
-    if (profileVal !== undefined && profileVal !== null) return formatCAD(profileVal as number) + "/mo";
+    if (profileVal !== undefined && profileVal !== null && (profileVal as number) > 0) return formatCAD(profileVal as number) + "/mo";
+
+    // Derive from saved arsenal cards: each breakdown.spent is annual → divide by 12
+    const savedCards = activeProfile?.savedCards;
+    if (savedCards && savedCards.length > 0) {
+      let maxSpent = 0;
+      for (const card of savedCards) {
+        for (const b of card.breakdown ?? []) {
+          if (b.category === key && b.spent > maxSpent) maxSpent = b.spent;
+        }
+      }
+      if (maxSpent > 0) return formatCAD(maxSpent / 12) + "/mo";
+    }
+
     return null;
   }
 

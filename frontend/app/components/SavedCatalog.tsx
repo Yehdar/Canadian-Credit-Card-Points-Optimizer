@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Bookmark, Info, Receipt } from "lucide-react";
-import type { SavedCard, CategoryBreakdown } from "@/lib/api";
+import type { SavedCard, CategoryBreakdown, ExtractedData } from "@/lib/api";
 import { VisaMark, MastercardMark, AmexMark } from "./NetworkMarks";
 
 interface SavedCatalogProps {
@@ -11,7 +11,35 @@ interface SavedCatalogProps {
   onClose: () => void;
   onReSyncCard: (card: SavedCard) => void;
   onViewCard: (card: SavedCard) => void;
+  snapshot?: ExtractedData | null;
 }
+
+const REWARD_LABELS: Record<string, string> = {
+  cashback: "Cash Back",
+  points:   "Points / Travel",
+  both:     "Both",
+};
+
+const FEE_LABELS: Record<string, string> = {
+  no_fee:      "No annual fee",
+  include_fee: "Open to fees",
+};
+
+const SPEND_LABELS: { key: keyof NonNullable<ExtractedData["spending"]>; label: string }[] = [
+  { key: "groceries",            label: "Groceries" },
+  { key: "dining",               label: "Dining" },
+  { key: "gas",                  label: "Gas" },
+  { key: "travel",               label: "Travel" },
+  { key: "entertainment",        label: "Entertainment" },
+  { key: "subscriptions",        label: "Subscriptions" },
+  { key: "transit",              label: "Transit" },
+  { key: "pharmacy",             label: "Pharmacy" },
+  { key: "onlineShopping",       label: "Online Shopping" },
+  { key: "homeImprovement",      label: "Home Improvement" },
+  { key: "canadianTirePartners", label: "Canadian Tire Partners" },
+  { key: "foreignPurchases",     label: "Foreign Purchases" },
+  { key: "other",                label: "Other" },
+];
 
 const NETWORK_MARKS: Record<string, React.ReactNode> = {
   visa:       <VisaMark className="h-4 opacity-80" />,
@@ -119,10 +147,9 @@ function CardTile({
   );
 }
 
-export default function SavedCatalog({ savedCards, onClose, onReSyncCard, onViewCard }: SavedCatalogProps) {
+export default function SavedCatalog({ savedCards, onClose, onReSyncCard, onViewCard, snapshot }: SavedCatalogProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
-  const profileBreakdown = savedCards[0]?.breakdown?.filter(b => b.spent > 0) ?? [];
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -179,17 +206,55 @@ export default function SavedCatalog({ savedCards, onClose, onReSyncCard, onView
                     <Receipt className="h-3.5 w-3.5" />
                   </button>
                   {profileOpen && (
-                    <div className="absolute left-0 top-[calc(100%+6px)] z-10 w-56 rounded-xl border border-[#DADCE0] bg-white px-4 py-3 shadow-lg dark:border-[#3C4043] dark:bg-[#292A2D]">
-                      <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">Spending Profile</p>
+                    <div className="absolute left-0 top-[calc(100%+6px)] z-10 w-64 max-h-[70vh] overflow-y-auto rounded-xl border border-[#DADCE0] bg-white px-4 py-3 shadow-lg dark:border-[#3C4043] dark:bg-[#292A2D]">
+                      {/* Spending */}
+                      <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">Monthly Spending</p>
                       <div className="space-y-1">
-                        {profileBreakdown.map(b => (
-                          <p key={b.category} className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
-                            <span className="font-semibold text-[#202124] dark:text-[#E8EAED]">
-                              {CATEGORY_LABELS[b.category] ?? b.category}:
-                            </span>{" "}
-                            {formatCAD(b.spent / 12)}/mo
-                          </p>
-                        ))}
+                        {SPEND_LABELS.map(({ key, label }) => {
+                          const val = snapshot?.spending?.[key] ?? null;
+                          return (
+                            <p key={key} className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
+                              <span className="font-semibold text-[#202124] dark:text-[#E8EAED]">{label}:</span>{" "}
+                              {val !== null ? formatCAD(val) : "$0"}/mo
+                            </p>
+                          );
+                        })}
+                      </div>
+
+                      {/* Financial Profile */}
+                      <p className="mb-2 mt-4 text-[10px] font-bold uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">Financial Profile</p>
+                      <div className="space-y-1">
+                        <p className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
+                          <span className="font-semibold text-[#202124] dark:text-[#E8EAED]">Personal income:</span>{" "}
+                          {snapshot?.annualIncome != null ? formatCAD(snapshot.annualIncome) + "/yr" : "—"}
+                        </p>
+                        <p className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
+                          <span className="font-semibold text-[#202124] dark:text-[#E8EAED]">Household income:</span>{" "}
+                          {snapshot?.householdIncome != null ? formatCAD(snapshot.householdIncome) + "/yr" : "—"}
+                        </p>
+                        <p className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
+                          <span className="font-semibold text-[#202124] dark:text-[#E8EAED]">Credit score:</span>{" "}
+                          {snapshot?.estimatedCreditScore ?? "—"}
+                        </p>
+                      </div>
+
+                      {/* Preferences */}
+                      <p className="mb-2 mt-4 text-[10px] font-bold uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">Preferences</p>
+                      <div className="space-y-1">
+                        <p className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
+                          <span className="font-semibold text-[#202124] dark:text-[#E8EAED]">Reward type:</span>{" "}
+                          {snapshot?.filters?.rewardType ? (REWARD_LABELS[snapshot.filters.rewardType] ?? snapshot.filters.rewardType) : "—"}
+                        </p>
+                        <p className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
+                          <span className="font-semibold text-[#202124] dark:text-[#E8EAED]">Annual fee:</span>{" "}
+                          {snapshot?.filters?.feePreference ? (FEE_LABELS[snapshot.filters.feePreference] ?? snapshot.filters.feePreference) : "—"}
+                        </p>
+                        <p className="text-[12px] text-[#5F6368] dark:text-[#9AA0A6]">
+                          <span className="font-semibold text-[#202124] dark:text-[#E8EAED]">Networks:</span>{" "}
+                          {snapshot?.filters?.networks?.length
+                            ? snapshot.filters.networks.map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(", ")
+                            : "—"}
+                        </p>
                       </div>
                     </div>
                   )}

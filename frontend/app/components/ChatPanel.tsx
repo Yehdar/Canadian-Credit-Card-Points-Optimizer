@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Bookmark, CreditCard } from "lucide-react";
 import type { ChatMessage } from "@/lib/api";
+import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 
 interface ChatPanelProps {
   messages: ChatMessage[];
@@ -43,19 +44,11 @@ export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, 
   }
 
   return (
-    <div className="flex flex-col rounded-xl border border-[#DADCE0] bg-white dark:border-[#3C4043] dark:bg-[#2D2E30]">
+    <div className="flex flex-1 flex-col rounded-xl border border-[#DADCE0] bg-white min-h-0 dark:border-[#3C4043] dark:bg-[#2D2E30]">
 
       {/* Header */}
       <div className="flex items-center justify-between gap-2 border-b border-[#DADCE0] px-4 py-3 dark:border-[#3C4043]">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1A73E8] text-[11px] font-bold text-white">
-            CG
-          </div>
-          <div>
-            <p className="text-[13px] font-semibold text-[#202124] dark:text-[#E8EAED]">CardGenius</p>
-            <p className="text-[11px] text-[#5F6368] dark:text-[#9AA0A6]">AI Card Advisor</p>
-          </div>
-        </div>
+        <ProfileSwitcher />
         <div className="flex items-center gap-2">
           {hasCards && onViewCards && (
             <button
@@ -79,7 +72,7 @@ export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, 
       </div>
 
       {/* Message list */}
-      <div className="flex h-[300px] flex-col gap-3 overflow-y-auto px-4 py-4 lg:h-[320px]">
+      <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4 min-h-0">
         {messages.length === 0 && !isLoading && (
           <div className="flex flex-1 items-center justify-center">
             <p className="text-[12px] text-[#9AA0A6] dark:text-[#5F6368]">Starting conversation…</p>

@@ -103,13 +103,15 @@ export default function LiveProfileSidebar({ extractedData, activeProfile }: Liv
     return null;
   }
 
-  const annualIncome = extractedData?.annualIncome ?? null;
-  const householdIncome = extractedData?.householdIncome ?? null;
-  const creditScore = extractedData?.estimatedCreditScore ?? null;
+  const snap = activeProfile?.extractedSnapshot;
 
-  const rewardType = extractedData?.filters?.rewardType ?? null;
-  const feePreference = extractedData?.filters?.feePreference ?? null;
-  const networks = extractedData?.filters?.networks ?? null;
+  const annualIncome   = extractedData?.annualIncome            ?? snap?.annualIncome            ?? null;
+  const householdIncome = extractedData?.householdIncome         ?? snap?.householdIncome         ?? null;
+  const creditScore    = extractedData?.estimatedCreditScore    ?? snap?.estimatedCreditScore    ?? null;
+
+  const rewardType    = extractedData?.filters?.rewardType    ?? snap?.filters?.rewardType    ?? null;
+  const feePreference = extractedData?.filters?.feePreference ?? snap?.filters?.feePreference ?? null;
+  const networks      = extractedData?.filters?.networks      ?? snap?.filters?.networks      ?? null;
 
   const hasAnyData =
     extractedData !== null ||

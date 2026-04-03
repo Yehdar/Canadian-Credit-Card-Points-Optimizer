@@ -12,7 +12,10 @@ import type {
   OptimizeRequest,
   RecommendationResult,
   SavedCard,
+  ExtractedData,
 } from "@/lib/api";
+
+export type { ExtractedData };
 
 // Visual metadata for 3D card rendering, emitted by Gemini per card.
 export interface VisualConfig {
@@ -53,27 +56,6 @@ interface GeminiCard {
   visualConfig?: VisualConfig;
 }
 
-export interface ExtractedData {
-  spending: {
-    groceries: number | null; dining: number | null; gas: number | null;
-    travel: number | null; entertainment: number | null; subscriptions: number | null;
-    transit: number | null; pharmacy: number | null; onlineShopping: number | null;
-    homeImprovement: number | null; canadianTirePartners: number | null;
-    foreignPurchases: number | null; other: number | null;
-  } | null;
-  filters: {
-    rewardType: RewardType | null; feePreference: FeePreference | null;
-    rogersOwner: boolean | null; amazonPrime: boolean | null;
-    institutions: string[] | null; networks: CardNetwork[] | null;
-    benefits: {
-      noForeignFee: boolean | null; airportLounge: boolean | null;
-      priorityTravel: boolean | null; freeCheckedBag: boolean | null;
-    } | null;
-  } | null;
-  annualIncome: number | null;
-  householdIncome: number | null;
-  estimatedCreditScore: number | null;
-}
 
 // ── Defaults ──────────────────────────────────────────────────────────────────
 
@@ -95,7 +77,7 @@ const DEFAULT_FILTERS: FormFilters = {
 
 const GREETING: ChatMessage = {
   role: "model",
-  content: "Ready to join millions of Canadians by building your credit card arsenal and optimizing points? \n\n To start, reference the spending categories to the right and type in as much information you can about your spending habits. \n Then let us know whether you'd prefer a single card or a multi-card setup!",
+  content: "Ready to join millions of Canadians by building your credit card arsenal and optimizing points? \n\n To start, reference the spending categories to the right and type in as much information you can about your spending habits. \n\n Then when the green button lights on, you can press it and will provide with what cards we believe are right for you!",
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -286,40 +268,55 @@ export function useChat() {
     }
   }
 
-  // Re-sync a saved card: rebuilds extractedData from its breakdown, then calls getCards().
-  async function reSyncCard(card: SavedCard) {
+  // Re-sync a saved card: uses the saved profile snapshot if available,
+  // otherwise falls back to reconstructing spending from the card's breakdown.
+  async function reSyncCard(card: SavedCard, snapshot?: ExtractedData | null) {
     if (isLoading) return;
 
-    // Reconstruct spending from the card's annual breakdown → convert to monthly
-    const spending: ExtractedData["spending"] = {
-      groceries: null, dining: null, gas: null, travel: null,
-      entertainment: null, subscriptions: null, transit: null, other: null,
-      pharmacy: null, onlineShopping: null, homeImprovement: null,
-      canadianTirePartners: null, foreignPurchases: null,
-    };
-    for (const b of card.breakdown ?? []) {
-      const key = b.category as keyof NonNullable<ExtractedData["spending"]>;
-      if (key in spending) {
-        (spending as Record<string, number | null>)[key] = b.spent / 12;
-      }
-    }
-    setExtractedData({ spending, filters: null, annualIncome: null, householdIncome: null, estimatedCreditScore: null });
+    let resolvedExtracted: ExtractedData;
+    let contextMsg: ChatMessage;
 
-    // Add a context message so Gemini knows the spend profile
-    const sorted = [...(card.breakdown ?? [])].sort((a, b) => b.spent - a.spent);
-    const topSpends = sorted.map(b => `${b.category} $${Math.round(b.spent / 12)}`).join(", ");
-    const contextMsg: ChatMessage = { role: "user", content: `Re-syncing arsenal. Monthly spending: ${topSpends}` };
+    if (snapshot?.spending) {
+      // Use the full saved context — spending, income, credit score, filters
+      resolvedExtracted = snapshot;
+      const sorted = Object.entries(snapshot.spending)
+        .filter(([, v]) => v !== null && v > 0)
+        .sort(([, a], [, b]) => (b as number) - (a as number));
+      const topSpends = sorted.map(([k, v]) => `${k} $${Math.round(v as number)}`).join(", ");
+      contextMsg = { role: "user", content: `Re-syncing arsenal using saved profile. Monthly spending: ${topSpends}` };
+    } else {
+      // Fallback: reconstruct spending from the card's annual breakdown → monthly
+      const spending: ExtractedData["spending"] = {
+        groceries: null, dining: null, gas: null, travel: null,
+        entertainment: null, subscriptions: null, transit: null, other: null,
+        pharmacy: null, onlineShopping: null, homeImprovement: null,
+        canadianTirePartners: null, foreignPurchases: null,
+      };
+      for (const b of card.breakdown ?? []) {
+        const key = b.category as keyof NonNullable<ExtractedData["spending"]>;
+        if (key in spending) {
+          (spending as Record<string, number | null>)[key] = b.spent / 12;
+        }
+      }
+      resolvedExtracted = { spending, filters: null, annualIncome: null, householdIncome: null, estimatedCreditScore: null };
+      const sorted = [...(card.breakdown ?? [])].sort((a, b) => b.spent - a.spent);
+      const topSpends = sorted.map(b => `${b.category} $${Math.round(b.spent / 12)}`).join(", ");
+      contextMsg = { role: "user", content: `Re-syncing arsenal. Monthly spending: ${topSpends}` };
+    }
+
+    setExtractedData(resolvedExtracted);
     setMessages([GREETING, contextMsg]);
     setResults([]);
     setArsenalCards([]);
 
-    // Now run getCards() with the freshly set extractedData — but since setState is async
-    // we inline the getCards logic here with the known spending values.
     setIsLoading(true);
     const request: OptimizeRequest = {
       strategy: "arsenal",
-      spending: toSpendingBreakdown(spending),
-      filters:  toFormFilters(null),
+      spending: toSpendingBreakdown(resolvedExtracted.spending ?? null),
+      filters:  toFormFilters(resolvedExtracted.filters ?? null),
+      annualIncome:         resolvedExtracted.annualIncome         ?? undefined,
+      householdIncome:      resolvedExtracted.householdIncome      ?? undefined,
+      estimatedCreditScore: resolvedExtracted.estimatedCreditScore ?? undefined,
       userText: contextMsg.content,
     };
 

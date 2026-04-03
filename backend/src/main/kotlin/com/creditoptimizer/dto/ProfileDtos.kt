@@ -1,6 +1,7 @@
 package com.creditoptimizer.dto
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 // ---------------------------------------------------------------------------
 // Saved-card types  (serialized as JSON into saved_cards_json column)
@@ -75,10 +76,11 @@ data class CreateProfileRequest(
 
 @Serializable
 data class UpdateProfileRequest(
-    val name:        String?            = null,
-    val profileType: String?            = null,
-    val spending:    SpendingBreakdown? = null,
-    val savedCards:  List<SavedCardDto>? = null,
+    val name:                String?            = null,
+    val profileType:         String?            = null,
+    val spending:            SpendingBreakdown? = null,
+    val savedCards:          List<SavedCardDto>? = null,
+    val extractedSnapshot:   JsonElement?        = null,
 )
 
 // ---------------------------------------------------------------------------
@@ -87,12 +89,13 @@ data class UpdateProfileRequest(
 
 @Serializable
 data class ProfileResponse(
-    val id:          Int,
-    val name:        String,
-    val profileType: String,
-    val spending:    SpendingBreakdown,
-    val savedCards:  List<SavedCardDto>? = null,
+    val id:                Int,
+    val name:              String,
+    val profileType:       String,
+    val spending:          SpendingBreakdown,
+    val savedCards:        List<SavedCardDto>? = null,
+    val extractedSnapshot: JsonElement?         = null,
     /** ISO-8601 string; omit timezone conversion — store UTC, display locally. */
-    val createdAt:   String,
-    val updatedAt:   String,
+    val createdAt:         String,
+    val updatedAt:         String,
 )

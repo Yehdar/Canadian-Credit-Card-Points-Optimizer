@@ -202,7 +202,12 @@ export default function ThreeDCard({ cardType, color, visualConfig }: ThreeDCard
 
   return (
     <div className="h-full w-full">
-      <Canvas camera={{ position: [0, 0, 2.5], fov: 40 }}>
+      <Canvas
+        camera={{ position: [0, 0, 2.5], fov: 40 }}
+        gl={{ alpha: true }}
+        style={{ background: "transparent" }}
+        onCreated={() => window.dispatchEvent(new Event("resize"))}
+      >
         <ambientLight intensity={0.5} />
         <directionalLight position={[3, 3, 3]} intensity={1.8} />
         <directionalLight position={[-3, 1, 2]} intensity={0.6} color="#F0F0F0" />

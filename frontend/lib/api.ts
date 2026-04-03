@@ -95,6 +95,28 @@ export interface FormFilters {
   };
 }
 
+export interface ExtractedData {
+  spending: {
+    groceries: number | null; dining: number | null; gas: number | null;
+    travel: number | null; entertainment: number | null; subscriptions: number | null;
+    transit: number | null; pharmacy: number | null; onlineShopping: number | null;
+    homeImprovement: number | null; canadianTirePartners: number | null;
+    foreignPurchases: number | null; other: number | null;
+  } | null;
+  filters: {
+    rewardType: RewardType | null; feePreference: FeePreference | null;
+    rogersOwner: boolean | null; amazonPrime: boolean | null;
+    institutions: string[] | null; networks: CardNetwork[] | null;
+    benefits: {
+      noForeignFee: boolean | null; airportLounge: boolean | null;
+      priorityTravel: boolean | null; freeCheckedBag: boolean | null;
+    } | null;
+  } | null;
+  annualIncome: number | null;
+  householdIncome: number | null;
+  estimatedCreditScore: number | null;
+}
+
 export interface SpendingFormSubmission {
   spending:             SpendingBreakdown;
   filters:              FormFilters;
@@ -107,6 +129,7 @@ export interface Profile {
   id: number;
   name: string;
   profileType: ProfileType;
+  extractedSnapshot?: ExtractedData;
   spending: SpendingBreakdown;
   savedCards: SavedCard[] | null;
   createdAt: string;
@@ -124,6 +147,7 @@ export interface UpdateProfilePayload {
   profileType?: ProfileType;
   spending?: SpendingBreakdown;
   savedCards?: SavedCard[];
+  extractedSnapshot?: ExtractedData;
 }
 
 export async function fetchProfiles(): Promise<Profile[]> {

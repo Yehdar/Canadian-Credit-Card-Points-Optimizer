@@ -106,6 +106,14 @@ export default function ArsenalModal({ results, arsenalCards, onClose, onDevSkip
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
   const [saveDismissed, setSaveDismissed] = useState(false);
+  const [cardReady, setCardReady] = useState(false);
+
+  // Delay mounting ThreeDCard until after the modal enter animation (180ms)
+  // so the WebGL canvas gets accurate dimensions on first render.
+  useEffect(() => {
+    const t = setTimeout(() => setCardReady(true), 220);
+    return () => clearTimeout(t);
+  }, []);
 
   // Close on Escape key
   useEffect(() => {
@@ -182,7 +190,7 @@ export default function ArsenalModal({ results, arsenalCards, onClose, onDevSkip
             <div className="pointer-events-none absolute bottom-8 left-1/2 h-[1px] w-1/2 -translate-x-1/2 bg-gradient-to-r from-transparent via-[#DADCE0] to-transparent dark:via-[#3C4043]" />
 
             <div className="h-52 w-full max-w-[280px] lg:h-64">
-              {selected && (
+              {selected && cardReady && (
                 <ThreeDCard
                   cardType={selected.card.cardType as "visa" | "mastercard" | "amex"}
                   cardName={selected.card.name}
@@ -281,7 +289,7 @@ export default function ArsenalModal({ results, arsenalCards, onClose, onDevSkip
                     {selected.breakdown.length > 0 && (
                       <div>
                         <p className="mb-3 text-[10px] font-medium uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">
-                          Category breakdown
+                          Points Breakdown
                         </p>
                         <div className="space-y-2.5">
                           {selected.breakdown.map((b) => (

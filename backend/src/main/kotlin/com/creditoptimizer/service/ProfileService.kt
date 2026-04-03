@@ -94,6 +94,9 @@ class ProfileService {
             it[savedCardsJson]        = request.savedCards
                 ?.let { cards -> json.encodeToString(cards) }
                 ?: existing[savedCardsJson]   // preserve existing value if savedCards not supplied
+            it[extractedSnapshotJson] = request.extractedSnapshot
+                ?.let { snap -> json.encodeToString(snap) }
+                ?: existing[extractedSnapshotJson]
             // updated_at is handled by the DB trigger in V3 migration
         }
 
@@ -128,14 +131,16 @@ class ProfileService {
     )
 
     private fun ResultRow.toResponse() = ProfileResponse(
-        id          = this[SpendingProfiles.id].value,
-        name        = this[SpendingProfiles.name],
-        profileType = this[SpendingProfiles.profileType],
-        spending    = toSpendingBreakdown(),
-        savedCards  = this[SpendingProfiles.savedCardsJson]
+        id                = this[SpendingProfiles.id].value,
+        name              = this[SpendingProfiles.name],
+        profileType       = this[SpendingProfiles.profileType],
+        spending          = toSpendingBreakdown(),
+        savedCards        = this[SpendingProfiles.savedCardsJson]
             ?.let { raw -> runCatching { json.decodeFromString<List<SavedCardDto>>(raw) }.getOrNull() },
-        createdAt   = this[SpendingProfiles.createdAt].toString(),
-        updatedAt   = this[SpendingProfiles.updatedAt].toString(),
+        extractedSnapshot = this[SpendingProfiles.extractedSnapshotJson]
+            ?.let { raw -> runCatching { json.parseToJsonElement(raw) }.getOrNull() },
+        createdAt         = this[SpendingProfiles.createdAt].toString(),
+        updatedAt         = this[SpendingProfiles.updatedAt].toString(),
     )
 
     private fun Double.toBigDecimal(): BigDecimal = BigDecimal.valueOf(this)

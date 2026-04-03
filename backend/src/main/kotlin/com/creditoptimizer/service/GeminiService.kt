@@ -48,7 +48,7 @@ class GeminiService(private val apiKey: String) {
             json(Json { ignoreUnknownKeys = true })
         }
         install(HttpTimeout) {
-            requestTimeoutMillis = 45_000
+            requestTimeoutMillis = 90_000
         }
     }
 
@@ -99,6 +99,11 @@ class GeminiService(private val apiKey: String) {
                     }
                 }
             }
+            put("generationConfig", buildJsonObject {
+                put("thinkingConfig", buildJsonObject {
+                    put("thinkingBudget", 0)
+                })
+            })
         }
 
         val httpResponse = try {

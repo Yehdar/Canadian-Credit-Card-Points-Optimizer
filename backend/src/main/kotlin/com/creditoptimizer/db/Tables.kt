@@ -33,6 +33,9 @@ object SpendingProfiles : IntIdTable("spending_profiles") {
     // Gemini-recommended cards serialized as JSON (added in V10); NULL until user saves
     val savedCardsJson        = text("saved_cards_json").nullable()
 
+    // Full extracted context (spending, income, credit score, filters) saved with the arsenal (V11)
+    val extractedSnapshotJson = text("extracted_snapshot_json").nullable()
+
     val createdAt     = timestamp("created_at")
     val updatedAt     = timestamp("updated_at")
 }

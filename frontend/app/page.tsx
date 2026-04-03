@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 import ChatPanel from "@/app/components/ChatPanel";
 import LiveProfileSidebar from "@/app/components/LiveProfileSidebar";
 import ArsenalModal from "@/app/components/ArsenalModal";
@@ -9,7 +8,7 @@ import SavedCatalog from "@/app/components/SavedCatalog";
 import { useProfile } from "@/context/ProfileContext";
 import { useChat } from "@/hooks/useChat";
 import type { ArsenalCard } from "@/hooks/useChat";
-import type { RecommendationResult, SavedCard } from "@/lib/api";
+import type { RecommendationResult, SavedCard, SpendingBreakdown } from "@/lib/api";
 
 // Dev-only mock data for the Arsenal skip tool.
 const DEV_MOCK_RESULTS: RecommendationResult[] = [
@@ -117,7 +116,6 @@ export default function Home() {
 
   function handleCloseArsenal() {
     setArsenalOpen(false);
-    addBotMessage("Want to keep chatting and fine-tuning the cards? \n Always happy to help you optimize further or answer any questions about the recommendations!");
   }
 
   function handleSaveCards() {
@@ -141,11 +139,29 @@ export default function Home() {
         visualConfig:       ac?.visualConfig,
       };
     });
-    saveCardsToProfile(cards);
+    // Convert monthly extractedData.spending → SpendingBreakdown for profile storage
+    const s = extractedData?.spending;
+    const spending: SpendingBreakdown | undefined = s ? {
+      groceries:            s.groceries            ?? 0,
+      dining:               s.dining               ?? 0,
+      gas:                  s.gas                  ?? 0,
+      travel:               s.travel               ?? 0,
+      entertainment:        s.entertainment        ?? 0,
+      subscriptions:        s.subscriptions        ?? 0,
+      transit:              s.transit              ?? 0,
+      other:                s.other                ?? 0,
+      pharmacy:             s.pharmacy             ?? 0,
+      onlineShopping:       s.onlineShopping       ?? 0,
+      homeImprovement:      s.homeImprovement      ?? 0,
+      canadianTirePartners: s.canadianTirePartners ?? 0,
+      foreignPurchases:     s.foreignPurchases     ?? 0,
+    } : undefined;
+
+    saveCardsToProfile(cards, extractedData, spending);
   }
 
   function handleReSyncCard(card: SavedCard) {
-    reSyncCard(card);
+    reSyncCard(card, activeProfile?.extractedSnapshot);
   }
 
   function handleViewSavedCard(card: SavedCard) {
@@ -203,24 +219,19 @@ export default function Home() {
     <div className="flex min-h-[calc(100vh-3.5rem)] flex-col bg-[#F8F9FA] dark:bg-[#202124] lg:min-h-0 lg:h-[calc(100vh-3.5rem)] lg:flex-row lg:overflow-hidden">
 
       {/* ── Left pane — chat ───────────────────────────────────────────── */}
-      <aside className="scroll-pane shrink-0 flex flex-col border-b border-[#DADCE0] bg-[#F8F9FA] px-6 py-6 dark:border-[#3C4043] dark:bg-[#202124] lg:w-3/5 lg:overflow-y-auto lg:border-b-0 lg:border-r">
-
-        <ProfileSwitcher />
-
-        <div className="mt-5 flex-1">
-          <ChatPanel
-            messages={messages}
-            isLoading={isChatLoading}
-            isDone={isDone}
-            onSendMessage={sendMessage}
-            hasCards={activeResults.length > 0}
-            onViewCards={() => setArsenalOpen(true)}
-            hasSavedCards={!!(activeProfile?.savedCards?.length)}
-            onViewSavedCards={() => setSavedCatalogOpen(true)}
-            onGetCards={getCards}
-            canGetCards={messages.some(m => m.role === "user")}
-          />
-        </div>
+      <aside className="scroll-pane shrink-0 flex flex-col border-b border-[#DADCE0] bg-[#F8F9FA] px-6 py-6 dark:border-[#3C4043] dark:bg-[#202124] lg:w-3/5 lg:overflow-hidden lg:border-b-0 lg:border-r">
+        <ChatPanel
+          messages={messages}
+          isLoading={isChatLoading}
+          isDone={isDone}
+          onSendMessage={sendMessage}
+          hasCards={activeResults.length > 0}
+          onViewCards={() => setArsenalOpen(true)}
+          hasSavedCards={!!(activeProfile?.savedCards?.length)}
+          onViewSavedCards={() => setSavedCatalogOpen(true)}
+          onGetCards={getCards}
+          canGetCards={messages.some(m => m.role === "user")}
+        />
       </aside>
 
       {/* ── Right pane — live profile summary ─────────────────────────── */}
@@ -250,6 +261,7 @@ export default function Home() {
           onClose={() => setSavedCatalogOpen(false)}
           onReSyncCard={handleReSyncCard}
           onViewCard={handleViewSavedCard}
+          snapshot={activeProfile?.extractedSnapshot ?? null}
         />
       )}
 

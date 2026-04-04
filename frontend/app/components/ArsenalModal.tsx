@@ -80,8 +80,8 @@ function CardPortrait({
       onClick={onClick}
       className={`flex shrink-0 flex-col gap-1.5 rounded-xl border p-3 text-left transition-all duration-150 ${
         isActive
-          ? "border-black bg-[#F1F3F4] dark:border-[#E8EAED] dark:bg-[#292A2D]"
-          : "border-[#DADCE0] bg-white hover:bg-[#F8F9FA] dark:border-[#3C4043] dark:bg-[#202124] dark:hover:bg-[#292A2D]"
+          ? "border-black bg-[#F1F3F4] dark:border-white/40 dark:bg-[#292A2D]"
+          : "border-[#DADCE0] bg-white hover:bg-[#F8F9FA] dark:border-white/10 dark:bg-[#202124] dark:hover:bg-[#292A2D]"
       }`}
       style={{ minWidth: "148px" }}
     >
@@ -106,13 +106,10 @@ export default function ArsenalModal({ results, arsenalCards, onClose, activePro
   const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
   const [saveDismissed, setSaveDismissed] = useState(false);
   const [cardReady, setCardReady] = useState(false);
+  const [cardKey, setCardKey] = useState(0);
 
-  // Delay mounting ThreeDCard until after the modal enter animation (180ms)
-  // so the WebGL canvas gets accurate dimensions on first render.
-  useEffect(() => {
-    const t = setTimeout(() => setCardReady(true), 220);
-    return () => clearTimeout(t);
-  }, []);
+  // Reset loading state when card changes or is refreshed
+  useEffect(() => { setCardReady(false); }, [selectedIndex, cardKey]);
 
   // Close on Escape key
   useEffect(() => {
@@ -188,15 +185,41 @@ export default function ArsenalModal({ results, arsenalCards, onClose, activePro
             {/* Floor line */}
             <div className="pointer-events-none absolute bottom-8 left-1/2 h-[1px] w-1/2 -translate-x-1/2 bg-gradient-to-r from-transparent via-[#DADCE0] to-transparent dark:via-[#3C4043]" />
 
-            <div className="h-52 w-full max-w-[280px] lg:h-64">
-              {selected && cardReady && (
-                <ThreeDCard
-                  cardType={selected.card.cardType as "visa" | "mastercard" | "amex"}
-                  cardName={selected.card.name}
-                  issuer={selected.card.issuer}
-                  color={aiCard?.visualConfig?.baseColor ?? CARD_COLOR_OVERRIDES[selected.card.name]}
-                  visualConfig={aiCard?.visualConfig}
-                />
+            <div className="relative h-52 w-full max-w-[280px] lg:h-64">
+              {/* Loading spinner */}
+              {!cardReady && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-full border-2 border-white/10 border-t-white/50 animate-spin" />
+                </div>
+              )}
+
+              {/* 3D card */}
+              <div className={`h-full w-full transition-opacity duration-300 ${cardReady ? "opacity-100" : "opacity-0"}`}>
+                {selected && (
+                  <ThreeDCard
+                    key={cardKey}
+                    cardType={selected.card.cardType as "visa" | "mastercard" | "amex"}
+                    cardName={selected.card.name}
+                    issuer={selected.card.issuer}
+                    color={aiCard?.visualConfig?.baseColor ?? CARD_COLOR_OVERRIDES[selected.card.name]}
+                    visualConfig={aiCard?.visualConfig}
+                    onReady={() => setCardReady(true)}
+                  />
+                )}
+              </div>
+
+              {/* Refresh button */}
+              {cardReady && (
+                <button
+                  onClick={() => setCardKey(k => k + 1)}
+                  aria-label="Refresh 3D card"
+                  className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/20 text-white/50 backdrop-blur-sm transition hover:bg-black/40 hover:text-white/80"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.5 6A4.5 4.5 0 1 1 8.25 2.1" />
+                    <path d="M10.5 1.5v3h-3" />
+                  </svg>
+                </button>
               )}
             </div>
           </div>
@@ -238,7 +261,7 @@ export default function ArsenalModal({ results, arsenalCards, onClose, activePro
                     {aiCard?.description && (
                       <div className="flex items-start gap-3 rounded-xl border border-[#E8F0FE] bg-[#F0F4FF] px-4 py-3 dark:border-[#1A3A6B] dark:bg-[#1A2A4A]">
                         <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#1A73E8] text-[9px] font-bold text-white">
-                          CG
+                          O‿O
                         </div>
                         <p className="text-[12px] leading-relaxed text-[#1A73E8] dark:text-[#7BAAF7]">
                           {aiCard.description}
@@ -303,7 +326,7 @@ export default function ArsenalModal({ results, arsenalCards, onClose, activePro
                               </div>
                               <div className="h-1 w-full overflow-hidden rounded-full bg-[#DADCE0] dark:bg-[#3C4043]">
                                 <motion.div
-                                  className="h-full rounded-full bg-[#202124] dark:bg-[#E8EAED]"
+                                  className="h-full rounded-full bg-[#202124] dark:bg-white"
                                   initial={{ width: 0 }}
                                   animate={{ width: `${Math.round((b.valueCAD / maxValue) * 100)}%` }}
                                   transition={{ duration: 0.45, ease: "easeOut" }}

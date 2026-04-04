@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bookmark, CreditCard } from "lucide-react";
+import { motion } from "framer-motion";
+import { Bookmark, CreditCard, Send } from "lucide-react";
 import type { ChatMessage } from "@/lib/api";
 import ProfileSwitcher from "@/app/components/ProfileSwitcher";
 
@@ -43,17 +44,19 @@ export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, 
     }
   }
 
+  const hasText = input.trim().length > 0;
+
   return (
-    <div className="flex flex-1 flex-col rounded-xl border border-[#DADCE0] bg-white min-h-0 dark:border-[#3C4043] dark:bg-[#2D2E30]">
+    <div className="flex flex-1 flex-col rounded-xl border border-[#DADCE0] bg-white min-h-0 dark:border-white/10 dark:bg-[#2D2E30]">
 
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 border-b border-[#DADCE0] px-4 py-3 dark:border-[#3C4043]">
+      <div className="flex items-center justify-between gap-2 border-b border-[#DADCE0] px-4 py-3 dark:border-white/10">
         <ProfileSwitcher />
         <div className="flex items-center gap-2">
           {hasCards && onViewCards && (
             <button
               onClick={onViewCards}
-              className="flex items-center gap-1.5 rounded-lg border border-[#DADCE0] px-2.5 py-1.5 text-[11px] font-medium text-[#5F6368] transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
+              className="flex items-center gap-1.5 rounded-lg border border-[#DADCE0] px-2.5 py-1.5 text-[11px] font-medium text-[#5F6368] transition hover:bg-[#F1F3F4] dark:border-white/10 dark:text-[#9AA0A6] dark:hover:bg-white/5"
             >
               <CreditCard className="h-3.5 w-3.5" />
               View Credit Cards
@@ -62,7 +65,7 @@ export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, 
           {hasSavedCards && onViewSavedCards && (
             <button
               onClick={onViewSavedCards}
-              className="flex items-center gap-1.5 rounded-lg border border-[#DADCE0] px-2.5 py-1.5 text-[11px] font-medium text-[#5F6368] transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
+              className="flex items-center gap-1.5 rounded-lg border border-[#DADCE0] px-2.5 py-1.5 text-[11px] font-medium text-[#5F6368] transition hover:bg-[#F1F3F4] dark:border-white/10 dark:text-[#9AA0A6] dark:hover:bg-white/5"
             >
               <Bookmark className="h-3.5 w-3.5" />
               Saved Cards
@@ -82,31 +85,43 @@ export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, 
         {messages.map((msg, i) =>
           msg.role === "model" ? (
             // CardGenius bubble — left aligned
-            <div key={i} className="flex items-end gap-2">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A73E8] text-[9px] font-bold text-white">
-                CG
+            <motion.div
+              key={i}
+              className="flex items-end gap-2"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-gray-600 to-gray-800 text-[9px] font-bold text-white">
+              O‿O
               </div>
-              <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-[#F1F3F4] px-3 py-2 text-[13px] leading-relaxed text-[#202124] dark:bg-[#3C4043] dark:text-[#E8EAED]">
+              <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-transparent bg-[#F1F3F4] px-3 py-2 text-[13px] leading-relaxed text-[#202124] dark:border-white/10 dark:bg-white/[0.04] dark:text-[#E8EAED]">
                 <MessageText text={msg.content} />
               </div>
-            </div>
+            </motion.div>
           ) : (
             // User bubble — right aligned
-            <div key={i} className="flex items-end justify-end gap-2">
-              <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-[#1A73E8] px-3 py-2 text-[13px] leading-relaxed text-white">
+            <motion.div
+              key={i}
+              className="flex items-end justify-end gap-2"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="max-w-[85%] rounded-2xl rounded-br-sm border border-[#B8BCC4] bg-[#CDD0D6] px-3 py-2 text-[13px] leading-relaxed text-[#202124] dark:border-white/[0.18] dark:bg-white/[0.15] dark:text-[#E8EAED]">
                 {msg.content}
               </div>
-            </div>
+            </motion.div>
           )
         )}
 
         {/* Typing indicator */}
         {isLoading && (
           <div className="flex items-end gap-2">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A73E8] text-[9px] font-bold text-white">
-              CG
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-gray-600 to-gray-800 text-[9px] font-bold text-white">
+              O‿O
             </div>
-            <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm bg-[#F1F3F4] px-4 py-3 dark:bg-[#3C4043]">
+            <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm border border-transparent bg-[#F1F3F4] px-4 py-3 dark:border-white/10 dark:bg-white/[0.04]">
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#9AA0A6] [animation-delay:0ms]" />
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#9AA0A6] [animation-delay:150ms]" />
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#9AA0A6] [animation-delay:300ms]" />
@@ -118,7 +133,7 @@ export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, 
       </div>
 
       {/* Input row */}
-      <div className="border-t border-[#DADCE0] px-3 py-3 dark:border-[#3C4043]">
+      <div className="border-t border-[#DADCE0] px-3 py-3 dark:border-white/10">
         <div className="flex items-center gap-2">
           <input
             ref={inputRef}
@@ -128,21 +143,29 @@ export default function ChatPanel({ messages, isLoading, isDone, onSendMessage, 
             onKeyDown={handleKeyDown}
             disabled={isLoading}
             placeholder="Type your answer…"
-            className="flex-1 rounded-full border border-[#DADCE0] bg-[#F8F9FA] px-4 py-2 text-[13px] text-[#202124] placeholder-[#9AA0A6] outline-none transition focus:border-[#1A73E8] focus:bg-white disabled:opacity-50 dark:border-[#3C4043] dark:bg-[#202124] dark:text-[#E8EAED] dark:placeholder-[#5F6368] dark:focus:bg-[#2D2E30]"
+            className="flex-1 rounded-full border border-[#DADCE0] bg-[#F8F9FA] px-4 py-2 text-[13px] text-[#202124] placeholder-[#9AA0A6] outline-none transition focus:border-[#1A73E8] focus:bg-white disabled:opacity-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-[#E8EAED] dark:placeholder-[#5F6368] dark:focus:border-white/30 dark:focus:bg-white/[0.07]"
           />
           <button
             onClick={handleSend}
-            disabled={!input.trim() || isLoading}
+            disabled={!hasText || isLoading}
             aria-label="Send message"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1A73E8] text-white transition hover:bg-[#1557B0] disabled:cursor-not-allowed disabled:opacity-40"
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all ${
+              hasText && !isLoading
+                ? "bg-white text-gray-900 glow-emerald-sm hover:brightness-90"
+                : "bg-[#F1F3F4] text-gray-400 dark:bg-white/[0.06] dark:text-gray-600"
+            } disabled:cursor-not-allowed`}
           >
-            <SendIcon />
+            <Send className="h-4 w-4" />
           </button>
           {onGetCards && (
             <button
               onClick={onGetCards}
               disabled={!canGetCards || isLoading}
-              className="shrink-0 rounded-full bg-[#1A73E8] px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-[#1557B0] disabled:cursor-not-allowed disabled:opacity-40"
+              className={`shrink-0 rounded-full px-4 py-2 text-[12px] font-semibold transition-all ${
+                canGetCards && !isLoading
+                  ? "animate-neon-pulse bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:opacity-90 hover:scale-[1.02] cursor-pointer"
+                  : "bg-black/5 text-black/25 border border-black/10 dark:bg-white/5 dark:text-white/20 dark:border-white/10 cursor-not-allowed"
+              }`}
             >
               Get Cards Now
             </button>
@@ -165,14 +188,5 @@ function MessageText({ text }: { text: string }) {
         </span>
       ))}
     </>
-  );
-}
-
-function SendIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="22" y1="2" x2="11" y2="13" />
-      <polygon points="22 2 15 22 11 13 2 9 22 2" />
-    </svg>
   );
 }

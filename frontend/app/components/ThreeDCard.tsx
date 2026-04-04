@@ -147,9 +147,10 @@ interface ThreeDCardProps {
   issuer: string;
   color?: string;
   visualConfig?: VisualConfig;
+  onReady?: () => void;
 }
 
-function ThreeDCard({ cardType, color, visualConfig }: ThreeDCardProps) {
+function ThreeDCard({ cardType, color, visualConfig, onReady }: ThreeDCardProps) {
   const { resolvedColor, metalness, roughness, clearcoat, logoUrl } = useMemo(() => ({
     resolvedColor: visualConfig?.baseColor ?? color ?? CARD_COLORS[cardType] ?? "#1A1A2E",
     metalness:     visualConfig?.metalness ?? 0.7,
@@ -186,6 +187,7 @@ function ThreeDCard({ cardType, color, visualConfig }: ThreeDCardProps) {
         camera={{ position: [0, 0, 2.5], fov: 40 }}
         gl={{ alpha: true }}
         style={{ background: "transparent" }}
+        onCreated={() => onReady?.()}
       >
         <ambientLight intensity={0.5} />
         <directionalLight position={[3, 3, 3]} intensity={1.8} />

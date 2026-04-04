@@ -32,6 +32,7 @@ export default function Home() {
   // Open the Arsenal modal once Gemini returns results.
   useEffect(() => {
     if (results.length > 0 && isDone) {
+      import("@/app/components/ThreeDCard"); // preload WebGL bundle before modal opens
       setArsenalOpen(true);
     }
   }, [results, isDone]); // eslint-disable-line react-hooks/exhaustive-deps

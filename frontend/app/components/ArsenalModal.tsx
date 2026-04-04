@@ -106,13 +106,10 @@ export default function ArsenalModal({ results, arsenalCards, onClose, activePro
   const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
   const [saveDismissed, setSaveDismissed] = useState(false);
   const [cardReady, setCardReady] = useState(false);
+  const [cardKey, setCardKey] = useState(0);
 
-  // Delay mounting ThreeDCard until after the modal enter animation (180ms)
-  // so the WebGL canvas gets accurate dimensions on first render.
-  useEffect(() => {
-    const t = setTimeout(() => setCardReady(true), 220);
-    return () => clearTimeout(t);
-  }, []);
+  // Reset loading state when card changes or is refreshed
+  useEffect(() => { setCardReady(false); }, [selectedIndex, cardKey]);
 
   // Close on Escape key
   useEffect(() => {
@@ -188,15 +185,41 @@ export default function ArsenalModal({ results, arsenalCards, onClose, activePro
             {/* Floor line */}
             <div className="pointer-events-none absolute bottom-8 left-1/2 h-[1px] w-1/2 -translate-x-1/2 bg-gradient-to-r from-transparent via-[#DADCE0] to-transparent dark:via-[#3C4043]" />
 
-            <div className="h-52 w-full max-w-[280px] lg:h-64">
-              {selected && cardReady && (
-                <ThreeDCard
-                  cardType={selected.card.cardType as "visa" | "mastercard" | "amex"}
-                  cardName={selected.card.name}
-                  issuer={selected.card.issuer}
-                  color={aiCard?.visualConfig?.baseColor ?? CARD_COLOR_OVERRIDES[selected.card.name]}
-                  visualConfig={aiCard?.visualConfig}
-                />
+            <div className="relative h-52 w-full max-w-[280px] lg:h-64">
+              {/* Loading spinner */}
+              {!cardReady && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-full border-2 border-white/10 border-t-white/50 animate-spin" />
+                </div>
+              )}
+
+              {/* 3D card */}
+              <div className={`h-full w-full transition-opacity duration-300 ${cardReady ? "opacity-100" : "opacity-0"}`}>
+                {selected && (
+                  <ThreeDCard
+                    key={cardKey}
+                    cardType={selected.card.cardType as "visa" | "mastercard" | "amex"}
+                    cardName={selected.card.name}
+                    issuer={selected.card.issuer}
+                    color={aiCard?.visualConfig?.baseColor ?? CARD_COLOR_OVERRIDES[selected.card.name]}
+                    visualConfig={aiCard?.visualConfig}
+                    onReady={() => setCardReady(true)}
+                  />
+                )}
+              </div>
+
+              {/* Refresh button */}
+              {cardReady && (
+                <button
+                  onClick={() => setCardKey(k => k + 1)}
+                  aria-label="Refresh 3D card"
+                  className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/20 text-white/50 backdrop-blur-sm transition hover:bg-black/40 hover:text-white/80"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.5 6A4.5 4.5 0 1 1 8.25 2.1" />
+                    <path d="M10.5 1.5v3h-3" />
+                  </svg>
+                </button>
               )}
             </div>
           </div>

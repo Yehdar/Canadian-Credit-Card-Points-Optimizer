@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(kill %1)",
+      "Read(//tmp/**)",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/16/bin/psql\" -U postgres -h localhost -d creditoptimizer -c \"\\\\dt\")",
+      "Read(//c/Users/Stuart/Desktop/local/Canadian-Credit-Card-Points-Optimizer/backend/**)",
+      "Bash('/c/Program Files/PostgreSQL/16/bin/psql' -U postgres -h localhost -d creditoptimizer -c ':*)",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/16/bin/psql\" -U postgres -h localhost -d creditoptimizer -c \"DROP TABLE IF EXISTS spending_profiles; DROP FUNCTION IF EXISTS set_updated_at\\(\\) CASCADE;\")"
+    ]
+  }
+}

@@ -73,7 +73,7 @@ function Row({ label, value }: { label: string; value: string | null }) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-2 mt-5 text-[10px] font-semibold uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">
+    <p className="mb-2 mt-5 text-[10px] font-semibold uppercase tracking-widest text-[#9AA0A6] dark:text-white/50">
       {children}
     </p>
   );

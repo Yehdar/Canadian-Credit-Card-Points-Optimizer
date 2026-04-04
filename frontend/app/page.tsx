@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import ChatPanel from "@/app/components/ChatPanel";
 import LiveProfileSidebar from "@/app/components/LiveProfileSidebar";
 import ArsenalModal from "@/app/components/ArsenalModal";
 import SavedCatalog from "@/app/components/SavedCatalog";
+import SplashScreen from "@/app/components/SplashScreen";
 import { useProfile } from "@/context/ProfileContext";
 import { useChat } from "@/hooks/useChat";
 import type { ArsenalCard } from "@/hooks/useChat";
@@ -14,6 +16,7 @@ export default function Home() {
   const { activeProfile, saveCardsToProfile } = useProfile();
   const { messages, isLoading: isChatLoading, extractedData, results, arsenalCards, isDone, sendMessage, getCards, reSyncCard, addBotMessage, resetChat } = useChat();
 
+  const [showSplash, setShowSplash] = useState(true);
   const [arsenalOpen, setArsenalOpen] = useState(false);
   const [savedCatalogOpen, setSavedCatalogOpen] = useState(false);
   const [savedCardView, setSavedCardView] = useState<SavedCard | null>(null);
@@ -119,11 +122,16 @@ export default function Home() {
   }, [savedCardView]);
 
   return (
-    /*
-      Mobile  : single column, standard page scroll
-      Desktop : fixed-height split pane — left (60%) fixed, right (40%) scrolls independently
-    */
-    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col bg-[#F8F9FA] dark:bg-[#202124] lg:min-h-0 lg:h-[calc(100vh-3.5rem)] lg:flex-row lg:overflow-hidden">
+    <>
+      <AnimatePresence>
+        {showSplash && <SplashScreen onDismiss={() => setShowSplash(false)} />}
+      </AnimatePresence>
+
+      {/*
+        Mobile  : single column, standard page scroll
+        Desktop : fixed-height split pane — left (60%) fixed, right (40%) scrolls independently
+      */}
+      <div className="flex min-h-[calc(100vh-3.5rem)] flex-col bg-[#F8F9FA] dark:bg-[#202124] lg:min-h-0 lg:h-[calc(100vh-3.5rem)] lg:flex-row lg:overflow-hidden">
 
       {/* ── Left pane — chat ───────────────────────────────────────────── */}
       <aside className="scroll-pane shrink-0 flex flex-col border-b border-[#DADCE0] bg-[#F8F9FA] px-6 py-6 dark:border-[#3C4043] dark:bg-[#202124] lg:w-3/5 lg:overflow-hidden lg:border-b-0 lg:border-r">
@@ -181,6 +189,20 @@ export default function Home() {
           onSaveCards={null}
         />
       )}
+
+      {/* ── Dev: reopen splash ─────────────────────────────────────────── */}
+      {process.env.NODE_ENV === "development" && (
+        <button
+          onClick={() => {
+            sessionStorage.removeItem("arsenal_splash_seen");
+            setShowSplash(true);
+          }}
+          className="fixed bottom-4 right-4 z-[300] rounded-md bg-black/70 px-3 py-1.5 text-[11px] font-mono text-white/60 ring-1 ring-white/20 backdrop-blur hover:bg-black/90"
+        >
+          [dev] splash
+        </button>
+      )}
     </div>
+    </>
   );
 }

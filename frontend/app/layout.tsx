@@ -20,16 +20,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <ProfileProvider>
             {/* Sticky nav */}
-            <header className="sticky top-0 z-50 border-b border-[#DADCE0] bg-white/80 backdrop-blur-md dark:border-[#3C4043] dark:bg-[#202124]/80">
+            <header className="sticky top-0 z-50 border-b border-black/10 bg-white/70 backdrop-blur-md dark:border-white/[0.08] dark:bg-black/50">
               <div className="flex h-14 items-center justify-between px-6">
-                <span className="text-[13px] font-semibold tracking-tight text-black dark:text-[#E8EAED]">
+                <span className="text-[14px] font-bold tracking-tight text-black dark:text-white">
                   Points Optimizer
                 </span>
                 <div className="flex items-center gap-4">
                   <ThemeToggle />
-                  <span className="text-[11px] font-medium uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">
-                    Canada
-                  </span>
                 </div>
               </div>
             </header>

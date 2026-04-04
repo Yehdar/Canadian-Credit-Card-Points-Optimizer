@@ -80,8 +80,8 @@ function CardPortrait({
       onClick={onClick}
       className={`flex shrink-0 flex-col gap-1.5 rounded-xl border p-3 text-left transition-all duration-150 ${
         isActive
-          ? "border-black bg-[#F1F3F4] dark:border-[#E8EAED] dark:bg-[#292A2D]"
-          : "border-[#DADCE0] bg-white hover:bg-[#F8F9FA] dark:border-[#3C4043] dark:bg-[#202124] dark:hover:bg-[#292A2D]"
+          ? "border-black bg-[#F1F3F4] dark:border-white/40 dark:bg-[#292A2D]"
+          : "border-[#DADCE0] bg-white hover:bg-[#F8F9FA] dark:border-white/10 dark:bg-[#202124] dark:hover:bg-[#292A2D]"
       }`}
       style={{ minWidth: "148px" }}
     >
@@ -238,7 +238,7 @@ export default function ArsenalModal({ results, arsenalCards, onClose, activePro
                     {aiCard?.description && (
                       <div className="flex items-start gap-3 rounded-xl border border-[#E8F0FE] bg-[#F0F4FF] px-4 py-3 dark:border-[#1A3A6B] dark:bg-[#1A2A4A]">
                         <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#1A73E8] text-[9px] font-bold text-white">
-                          CG
+                          O‿O
                         </div>
                         <p className="text-[12px] leading-relaxed text-[#1A73E8] dark:text-[#7BAAF7]">
                           {aiCard.description}
@@ -303,7 +303,7 @@ export default function ArsenalModal({ results, arsenalCards, onClose, activePro
                               </div>
                               <div className="h-1 w-full overflow-hidden rounded-full bg-[#DADCE0] dark:bg-[#3C4043]">
                                 <motion.div
-                                  className="h-full rounded-full bg-[#202124] dark:bg-[#E8EAED]"
+                                  className="h-full rounded-full bg-[#202124] dark:bg-white"
                                   initial={{ width: 0 }}
                                   animate={{ width: `${Math.round((b.valueCAD / maxValue) * 100)}%` }}
                                   transition={{ duration: 0.45, ease: "easeOut" }}

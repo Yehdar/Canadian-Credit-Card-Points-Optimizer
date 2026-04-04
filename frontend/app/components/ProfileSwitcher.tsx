@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { User, Heart, Briefcase } from "lucide-react";
 import { useProfile } from "@/context/ProfileContext";
 import type { ProfileType, SpendingBreakdown } from "@/lib/api";
 
@@ -9,6 +10,12 @@ const PROFILE_TYPES: { value: ProfileType; label: string }[] = [
   { value: "business", label: "Business" },
   { value: "partner",  label: "Partner"  },
 ];
+
+const PROFILE_ICONS: Record<ProfileType, React.ReactNode> = {
+  personal: <User className="h-3.5 w-3.5" />,
+  partner:  <Heart className="h-3.5 w-3.5" />,
+  business: <Briefcase className="h-3.5 w-3.5" />,
+};
 
 const DEFAULT_SPENDING: SpendingBreakdown = {
   groceries: 0, dining: 0, gas: 0, travel: 0,
@@ -72,6 +79,11 @@ export default function ProfileSwitcher() {
         onClick={() => setDropdownOpen((v) => !v)}
         className="flex items-center gap-2 rounded-full bg-black px-4 py-1.5 text-[13px] font-medium text-white transition-all duration-200 dark:bg-[#E8EAED] dark:text-[#202124]"
       >
+        {activeProfile?.profileType && (
+          <span className={`transition-all duration-200 ${dropdownOpen ? "glow-emerald-sm" : ""}`}>
+            {PROFILE_ICONS[activeProfile.profileType]}
+          </span>
+        )}
         <span>{activeProfile?.name ?? "No profile"}</span>
         <svg
           className={`h-3 w-3 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
@@ -84,7 +96,7 @@ export default function ProfileSwitcher() {
 
       {/* Dropdown */}
       {dropdownOpen && (
-        <div className="absolute left-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-2xl border border-[#DADCE0] bg-white shadow-lg dark:border-[#3C4043] dark:bg-[#292A2D]">
+        <div className="absolute left-0 top-full z-50 mt-1.5 w-72 overflow-hidden rounded-2xl border border-[#DADCE0] bg-white shadow-lg dark:border-[#3C4043] dark:bg-[#292A2D]">
 
           {view === "list" ? (
             <>
@@ -99,7 +111,10 @@ export default function ProfileSwitcher() {
                       onClick={() => { setActiveProfile(profile); setDropdownOpen(false); }}
                       className="group flex w-full items-center justify-between px-4 py-2.5 text-left text-[13px] transition-colors duration-150 hover:bg-[#F1F3F4] dark:hover:bg-[#3C4043]"
                     >
-                      <span className={isActive ? "font-semibold text-black dark:text-[#E8EAED]" : "text-[#5F6368] dark:text-[#9AA0A6]"}>
+                      <span className={`flex items-center gap-2 ${isActive ? "font-semibold text-black dark:text-[#E8EAED]" : "text-[#5F6368] dark:text-[#9AA0A6]"}`}>
+                        <span className={isActive ? "glow-emerald-sm" : ""}>
+                          {PROFILE_ICONS[profile.profileType]}
+                        </span>
                         {profile.name}
                       </span>
                       <span
@@ -155,7 +170,7 @@ export default function ProfileSwitcher() {
                 {PROFILE_TYPES.map(({ value, label }) => (
                   <label
                     key={value}
-                    className={`flex flex-1 cursor-pointer items-center justify-center rounded-full py-1.5 text-[11px] font-medium transition-all duration-200 ${
+                    className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full py-1.5 text-[11px] font-medium transition-all duration-200 ${
                       newType === value
                         ? "bg-black text-white dark:bg-[#E8EAED] dark:text-[#202124]"
                         : "border border-[#DADCE0] text-[#5F6368] hover:border-black hover:text-black dark:border-[#3C4043] dark:text-[#9AA0A6] dark:hover:border-[#E8EAED] dark:hover:text-[#E8EAED]"
@@ -169,6 +184,7 @@ export default function ProfileSwitcher() {
                       onChange={() => setNewType(value)}
                       className="sr-only"
                     />
+                    {PROFILE_ICONS[value]}
                     {label}
                   </label>
                 ))}

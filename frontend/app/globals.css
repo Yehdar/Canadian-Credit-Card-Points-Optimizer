@@ -71,3 +71,39 @@ input[type="number"] { -moz-appearance: textfield; }
 .scroll-pane       { scrollbar-width: thin; scrollbar-color: transparent transparent; }
 .scroll-pane:hover { scrollbar-color: #BDC1C6 transparent; }
 .dark .scroll-pane:hover { scrollbar-color: #5F6368 transparent; }
+
+/* ── White glow utilities ───────────────────────────────────────────────── */
+.glow-emerald {
+  box-shadow: 0 0 14px 2px rgba(255, 255, 255, 0.35);
+}
+.glow-emerald-sm {
+  box-shadow: 0 0 8px 1px rgba(255, 255, 255, 0.25);
+}
+
+/* ── Pulsing CTA animation ──────────────────────────────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.1); }
+  50%       { box-shadow: 0 0 12px 2px rgba(255, 255, 255, 0.2); }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+/* ── White neon CTA — "lit" state ───────────────────────────────────────── */
+@keyframes neon-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0  3px 1px rgba(255, 255, 255, 0.18),
+      0 0  8px 2px rgba(255, 255, 255, 0.1),
+      0 0 16px 4px rgba(255, 255, 255, 0.04);
+  }
+  50% {
+    box-shadow:
+      0 0  5px 1px rgba(255, 255, 255, 0.28),
+      0 0 12px 3px rgba(255, 255, 255, 0.15),
+      0 0 24px 6px rgba(255, 255, 255, 0.07);
+  }
+}
+.animate-neon-pulse {
+  animation: neon-pulse 1.8s ease-in-out infinite;
+}

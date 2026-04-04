@@ -9,7 +9,7 @@ export interface CardSummary {
   annualFee: number;
   pointsCurrency: string;
   cardType: string;
-  isPointsBased: boolean;  // true = points; false = cash-back / store-credit
+  isPointsBased: boolean;
 }
 
 export interface CategoryBreakdown {
@@ -25,7 +25,6 @@ export interface RecommendationResult {
   totalPointsEarned: number;
   totalValueCAD: number;
   netAnnualValue: number;
-  /** Present when the user's credit score is within the soft buffer of the card's minimum. */
   eligibilityWarning?: string;
 }
 
@@ -214,22 +213,3 @@ export async function sendOptimizeRequest(request: OptimizeRequest): Promise<Cha
   return res.json();
 }
 
-export async function fetchRecommendations(
-  args: (
-    | { profileId: number }
-    | { spending: SpendingBreakdown }
-  ) & {
-    filters?:              FormFilters;
-    annualIncome?:         number;
-    householdIncome?:      number;
-    estimatedCreditScore?: number;
-  }
-): Promise<RecommendationResult[]> {
-  const res = await fetch(`${API_BASE}/api/recommendations`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(args),
-  });
-  if (!res.ok) throw new Error(`Failed to fetch recommendations: ${res.status}`);
-  return res.json();
-}

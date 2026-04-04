@@ -4,7 +4,6 @@ import com.creditoptimizer.dto.OptimizeRequest
 import com.creditoptimizer.dto.CreateProfileRequest
 import com.creditoptimizer.dto.UpdateProfileRequest
 import com.creditoptimizer.service.GeminiService
-import com.creditoptimizer.service.ProfileNotFoundException
 import com.creditoptimizer.service.ProfileService
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -54,20 +53,8 @@ fun Application.configureRouting() {
 
                 // POST /api/profiles — create a new profile
                 post {
-                    val request = try {
-                        call.receive<CreateProfileRequest>()
-                    } catch (e: Exception) {
-                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid request body"))
-                        return@post
-                    }
-
-                    val profile = try {
-                        profileService.createProfile(request)
-                    } catch (e: IllegalArgumentException) {
-                        call.respond(HttpStatusCode.UnprocessableEntity, mapOf("error" to (e.message ?: "Validation error")))
-                        return@post
-                    }
-
+                    val request = call.receive<CreateProfileRequest>()
+                    val profile = profileService.createProfile(request)
                     call.respond(HttpStatusCode.Created, profile)
                 }
 
@@ -89,19 +76,8 @@ fun Application.configureRouting() {
                         val id = call.parameters["id"]?.toIntOrNull()
                             ?: return@put call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid profile id"))
 
-                        val request = try {
-                            call.receive<UpdateProfileRequest>()
-                        } catch (e: Exception) {
-                            call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid request body"))
-                            return@put
-                        }
-
-                        val updated = try {
-                            profileService.updateProfile(id, request)
-                        } catch (e: IllegalArgumentException) {
-                            call.respond(HttpStatusCode.UnprocessableEntity, mapOf("error" to (e.message ?: "Validation error")))
-                            return@put
-                        }
+                        val request = call.receive<UpdateProfileRequest>()
+                        val updated = profileService.updateProfile(id, request)
 
                         if (updated == null) {
                             call.respond(HttpStatusCode.NotFound, mapOf("error" to "Profile not found"))

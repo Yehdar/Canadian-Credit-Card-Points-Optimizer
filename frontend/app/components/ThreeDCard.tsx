@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { PresentationControls, RoundedBox, Environment, Decal, Text, useTexture } from "@react-three/drei";
 import type { Mesh } from "three";
@@ -74,20 +74,40 @@ function CardFaceDetails({ visualConfig }: { visualConfig?: VisualConfig }) {
   );
 }
 
-interface CardMeshCoreProps {
+// Shared rotation hook — eliminates the duplicate useFrame in CardMeshCore / CardMeshWithLogo.
+function useCardRotation() {
+  const meshRef = useRef<Mesh>(null!);
+  useFrame((_, delta) => {
+    meshRef.current.rotation.y += delta * 0.4;
+  });
+  return meshRef;
+}
+
+// Logo decal is its own component so useTexture (which suspends) is isolated.
+function CardMeshLogoDecal({ logoUrl }: { logoUrl: string }) {
+  const texture = useTexture(logoUrl);
+  return (
+    <Decal
+      position={[-0.35, 0.2, 0.026]}
+      rotation={[0, 0, 0]}
+      scale={0.35}
+      map={texture}
+    />
+  );
+}
+
+interface CardMeshProps {
   color: string;
   metalness: number;
   roughness: number;
   clearcoat: number;
   visualConfig?: VisualConfig;
+  logoUrl: string | null;
 }
 
-function CardMeshCore({ color, metalness, roughness, clearcoat, visualConfig }: CardMeshCoreProps) {
-  const meshRef = useRef<Mesh>(null!);
-
-  useFrame((_, delta) => {
-    meshRef.current.rotation.y += delta * 0.4;
-  });
+// Unified card mesh — renders with or without logo in a single component tree.
+function CardMesh({ color, metalness, roughness, clearcoat, visualConfig, logoUrl }: CardMeshProps) {
+  const meshRef = useCardRotation();
 
   return (
     <PresentationControls
@@ -110,49 +130,11 @@ function CardMeshCore({ color, metalness, roughness, clearcoat, visualConfig }: 
           clearcoatRoughness={0.1}
           envMapIntensity={1.2}
         />
-        <CardFaceDetails visualConfig={visualConfig} />
-      </RoundedBox>
-    </PresentationControls>
-  );
-}
-
-// Renders the card mesh with a Logo.dev logo decal on the face.
-// Must be wrapped in <Suspense> because useTexture suspends.
-function CardMeshWithLogo({ color, metalness, roughness, clearcoat, logoUrl, visualConfig }: CardMeshCoreProps & { logoUrl: string; visualConfig?: VisualConfig }) {
-  const meshRef = useRef<Mesh>(null!);
-  const texture = useTexture(logoUrl);
-
-  useFrame((_, delta) => {
-    meshRef.current.rotation.y += delta * 0.4;
-  });
-
-  return (
-    <PresentationControls
-      global
-      speed={1.5}
-      polar={[-Math.PI / 4, Math.PI / 4]}
-      azimuth={[-Math.PI / 3, Math.PI / 3]}
-    >
-      <RoundedBox
-        ref={meshRef}
-        args={[1.586, 1.0, 0.05]}
-        radius={0.06}
-        smoothness={4}
-      >
-        <meshPhysicalMaterial
-          color={color}
-          metalness={metalness}
-          roughness={roughness}
-          clearcoat={clearcoat}
-          clearcoatRoughness={0.1}
-          envMapIntensity={1.2}
-        />
-        <Decal
-          position={[-0.35, 0.2, 0.026]}
-          rotation={[0, 0, 0]}
-          scale={0.35}
-          map={texture}
-        />
+        {logoUrl && (
+          <Suspense fallback={null}>
+            <CardMeshLogoDecal logoUrl={logoUrl} />
+          </Suspense>
+        )}
         <CardFaceDetails visualConfig={visualConfig} />
       </RoundedBox>
     </PresentationControls>
@@ -167,16 +149,16 @@ interface ThreeDCardProps {
   visualConfig?: VisualConfig;
 }
 
-export default function ThreeDCard({ cardType, color, visualConfig }: ThreeDCardProps) {
-  const resolvedColor = visualConfig?.baseColor ?? color ?? CARD_COLORS[cardType] ?? "#1A1A2E";
-  const metalness     = visualConfig?.metalness ?? 0.7;
-  const roughness     = visualConfig?.roughness ?? 0.2;
-  const clearcoat     = visualConfig?.finish === "glossy" ? 1 : 0.3;
-
-  // Clearbit's logo API is free with no token required.
-  const logoUrl = visualConfig?.brandDomain
-    ? `https://logo.clearbit.com/${visualConfig.brandDomain}`
-    : null;
+function ThreeDCard({ cardType, color, visualConfig }: ThreeDCardProps) {
+  const { resolvedColor, metalness, roughness, clearcoat, logoUrl } = useMemo(() => ({
+    resolvedColor: visualConfig?.baseColor ?? color ?? CARD_COLORS[cardType] ?? "#1A1A2E",
+    metalness:     visualConfig?.metalness ?? 0.7,
+    roughness:     visualConfig?.roughness ?? 0.2,
+    clearcoat:     visualConfig?.finish === "glossy" ? 1 : 0.3,
+    logoUrl:       visualConfig?.brandDomain
+      ? `https://logo.clearbit.com/${visualConfig.brandDomain}`
+      : null,
+  }), [cardType, color, visualConfig]);
 
   const [logoAvailable, setLogoAvailable] = useState(false);
 
@@ -198,38 +180,29 @@ export default function ThreeDCard({ cardType, color, visualConfig }: ThreeDCard
     };
   }, [logoUrl]);
 
-  const showLogo = !!logoUrl && logoAvailable;
-
   return (
     <div className="h-full w-full">
       <Canvas
         camera={{ position: [0, 0, 2.5], fov: 40 }}
         gl={{ alpha: true }}
         style={{ background: "transparent" }}
-        onCreated={() => window.dispatchEvent(new Event("resize"))}
       >
         <ambientLight intensity={0.5} />
         <directionalLight position={[3, 3, 3]} intensity={1.8} />
         <directionalLight position={[-3, 1, 2]} intensity={0.6} color="#F0F0F0" />
         <spotLight position={[0, 4, 2]} intensity={1.5} penumbra={1} />
-        {showLogo ? (
-          <Suspense fallback={
-            <CardMeshCore color={resolvedColor} metalness={metalness} roughness={roughness} clearcoat={clearcoat} visualConfig={visualConfig} />
-          }>
-            <CardMeshWithLogo
-              color={resolvedColor}
-              metalness={metalness}
-              roughness={roughness}
-              clearcoat={clearcoat}
-              logoUrl={logoUrl!}
-              visualConfig={visualConfig}
-            />
-          </Suspense>
-        ) : (
-          <CardMeshCore color={resolvedColor} metalness={metalness} roughness={roughness} clearcoat={clearcoat} visualConfig={visualConfig} />
-        )}
+        <CardMesh
+          color={resolvedColor}
+          metalness={metalness}
+          roughness={roughness}
+          clearcoat={clearcoat}
+          visualConfig={visualConfig}
+          logoUrl={logoAvailable ? logoUrl : null}
+        />
         <Environment preset="city" />
       </Canvas>
     </div>
   );
 }
+
+export default React.memo(ThreeDCard);

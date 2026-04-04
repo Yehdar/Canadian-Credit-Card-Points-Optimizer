@@ -3,6 +3,7 @@ package com.creditoptimizer
 import com.creditoptimizer.plugins.configureDatabase
 import com.creditoptimizer.plugins.configureRouting
 import com.creditoptimizer.plugins.configureSerialization
+import com.creditoptimizer.plugins.configureStatusPages
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -14,6 +15,7 @@ fun main() {
 
 fun Application.module() {
     configureSerialization()
+    configureStatusPages()
     configureDatabase()
     configureRouting()
 }

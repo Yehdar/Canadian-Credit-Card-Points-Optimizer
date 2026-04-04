@@ -13,22 +13,13 @@ import type {
   RecommendationResult,
   SavedCard,
   ExtractedData,
+  SavedCardVisualConfig,
 } from "@/lib/api";
 
 export type { ExtractedData };
-
-// Visual metadata for 3D card rendering, emitted by Gemini per card.
-export interface VisualConfig {
-  baseColor: string;
-  metalness: number;
-  roughness: number;
-  finish: "matte" | "glossy" | "brushed_metal";
-  brandDomain: string;
-  companyName: string;
-  network: "visa" | "mastercard" | "amex";
-  cardNumber: string;
-  isMetal: boolean;
-}
+// Local alias + re-export so VisualConfig is usable within this file and by ThreeDCard.
+type VisualConfig = SavedCardVisualConfig;
+export type { VisualConfig };
 
 // A single card in the Arsenal with Gemini-authored purpose and description.
 export interface ArsenalCard {

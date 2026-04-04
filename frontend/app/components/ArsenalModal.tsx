@@ -20,7 +20,6 @@ interface ArsenalModalProps {
   results: RecommendationResult[];
   arsenalCards: ArsenalCard[];
   onClose: () => void;
-  onDevSkip?: () => void;
   activeProfileName: string | null;
   onSaveCards: (() => void) | null;
 }
@@ -102,7 +101,7 @@ function CardPortrait({
   );
 }
 
-export default function ArsenalModal({ results, arsenalCards, onClose, onDevSkip, activeProfileName, onSaveCards }: ArsenalModalProps) {
+export default function ArsenalModal({ results, arsenalCards, onClose, activeProfileName, onSaveCards }: ArsenalModalProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
   const [saveDismissed, setSaveDismissed] = useState(false);
@@ -390,15 +389,6 @@ export default function ArsenalModal({ results, arsenalCards, onClose, onDevSkip
         </div>
       </motion.div>
 
-      {/* Dev skip button */}
-      {process.env.NODE_ENV === "development" && onDevSkip && (
-        <button
-          onClick={onDevSkip}
-          className="fixed bottom-4 left-4 z-[70] rounded-lg border border-[#DADCE0] bg-white px-3 py-1.5 text-xs font-medium text-[#5F6368] shadow-sm transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:bg-[#292A2D] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
-        >
-          ⚡ dev: reload mock
-        </button>
-      )}
     </div>
   );
 }

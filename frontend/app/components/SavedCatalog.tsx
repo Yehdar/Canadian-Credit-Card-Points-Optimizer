@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Bookmark, Info, Receipt } from "lucide-react";
 import type { SavedCard, CategoryBreakdown, ExtractedData } from "@/lib/api";
@@ -150,6 +150,19 @@ function CardTile({
 export default function SavedCatalog({ savedCards, onClose, onReSyncCard, onViewCard, snapshot }: SavedCatalogProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const profileBtnRef = useRef<HTMLButtonElement>(null);
+  const [profilePos, setProfilePos] = useState<{ top: number; left: number; maxHeight: string } | null>(null);
+
+  useEffect(() => {
+    if (profileOpen && profileBtnRef.current) {
+      const rect = profileBtnRef.current.getBoundingClientRect();
+      setProfilePos({
+        top: rect.bottom + 6,
+        left: rect.left,
+        maxHeight: `${window.innerHeight - rect.bottom - 16}px`,
+      });
+    }
+  }, [profileOpen]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -199,14 +212,18 @@ export default function SavedCatalog({ savedCards, onClose, onReSyncCard, onView
                 {/* Spending Profile — standalone */}
                 <div className="relative">
                   <button
+                    ref={profileBtnRef}
                     onClick={() => { setProfileOpen(v => !v); setInfoOpen(false); }}
                     className="flex items-center gap-1.5 rounded-lg border border-[#DADCE0] px-3 py-1.5 text-[12px] font-medium text-[#5F6368] transition hover:bg-[#F1F3F4] dark:border-[#3C4043] dark:text-[#9AA0A6] dark:hover:bg-[#3C4043]"
                   >
                     Spending Profile
                     <Receipt className="h-3.5 w-3.5" />
                   </button>
-                  {profileOpen && (
-                    <div className="absolute left-0 top-[calc(100%+6px)] z-10 w-64 max-h-[70vh] overflow-y-auto rounded-xl border border-[#DADCE0] bg-white px-4 py-3 shadow-lg dark:border-[#3C4043] dark:bg-[#292A2D]">
+                  {profileOpen && profilePos && (
+                    <div
+                      className="fixed z-[9999] w-64 overflow-y-auto rounded-xl border border-[#DADCE0] bg-white px-4 py-3 shadow-lg dark:border-[#3C4043] dark:bg-[#292A2D]"
+                      style={{ top: profilePos.top, left: profilePos.left, maxHeight: profilePos.maxHeight }}
+                    >
                       {/* Spending */}
                       <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#9AA0A6] dark:text-[#5F6368]">Monthly Spending</p>
                       <div className="space-y-1">

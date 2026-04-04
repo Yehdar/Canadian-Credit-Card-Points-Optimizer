@@ -10,7 +10,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   title: "Points Optimizer — Canadian Credit Cards",
-  description: "Find the best Canadian credit card for your spending profile.",
+  description: "Find the best Canadian credit cards for your spending profile.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

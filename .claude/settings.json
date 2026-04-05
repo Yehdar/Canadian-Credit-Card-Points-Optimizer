@@ -12,7 +12,12 @@
       "Bash(node -e \"const m = require\\('c:/Users/Stuart/Desktop/local/Canadian-Credit-Card-Points-Optimizer/frontend/node_modules/@auth0/nextjs-auth0/dist/client/index.js'\\); console.log\\(Object.keys\\(m\\).join\\('\\\\n'\\)\\)\")",
       "Bash(curl -s --max-time 10 \"https://dev-wbpyhcwme0kf64kl.us.auth0.com/.well-known/openid-configuration\")",
       "Bash(node -e \"const m = require\\('c:/Users/Stuart/Desktop/local/Canadian-Credit-Card-Points-Optimizer/frontend/node_modules/@auth0/nextjs-auth0/dist/server/index.js'\\); const c = new m.Auth0Client; console.log\\(Object.keys\\(Object.getPrototypeOf\\(c\\)\\)\\)\")",
-      "Bash(node -e ':*)"
+      "Bash(node -e ':*)",
+      "Bash(psql -U postgres -c \"DROP DATABASE IF EXISTS creditoptimizer;\")",
+      "Bash(psql -U postgres -c \"CREATE DATABASE creditoptimizer;\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/16/bin/psql\" -U postgres -c \"DROP DATABASE IF EXISTS creditoptimizer; CREATE DATABASE creditoptimizer;\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/16/bin/psql\" -U postgres -c \"DROP DATABASE IF EXISTS creditoptimizer;\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/16/bin/psql\" -U postgres -c \"CREATE DATABASE creditoptimizer;\")"
     ]
   }
 }

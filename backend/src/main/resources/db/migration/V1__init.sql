@@ -33,9 +33,12 @@ CREATE TABLE spending_profiles (
     estimated_credit_score  INTEGER       NULL,
     saved_cards_json        TEXT          NULL,
     extracted_snapshot_json TEXT          NULL,
+    user_id                 VARCHAR(100)  NULL,
     created_at              TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
     updated_at              TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX idx_spending_profiles_user_id ON spending_profiles(user_id);
 
 CREATE TRIGGER trg_spending_profiles_updated_at
 BEFORE UPDATE ON spending_profiles

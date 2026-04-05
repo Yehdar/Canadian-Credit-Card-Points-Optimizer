@@ -34,6 +34,7 @@ export default function ProfileSwitcher() {
   const [newName, setNewName]           = useState("");
   const [newType, setNewType]           = useState<ProfileType>("personal");
   const [isCreating, setIsCreating]     = useState(false);
+  const [createError, setCreateError]   = useState<string | null>(null);
   const dropdownRef                     = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function ProfileSwitcher() {
       setView("list");
       setNewName("");
       setNewType("personal");
+      setCreateError(null);
     }
   }, [dropdownOpen]);
 
@@ -59,9 +61,17 @@ export default function ProfileSwitcher() {
     e.preventDefault();
     if (!newName.trim()) return;
     setIsCreating(true);
+    setCreateError(null);
     try {
       await createProfile(newName.trim(), newType, DEFAULT_SPENDING);
       setDropdownOpen(false);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("401")) {
+        setCreateError("sign-in-required");
+      } else {
+        setCreateError("Something went wrong. Please try again.");
+      }
     } finally {
       setIsCreating(false);
     }
@@ -197,6 +207,20 @@ export default function ProfileSwitcher() {
               >
                 {isCreating ? "Creating…" : "Create"}
               </button>
+
+              {createError === "sign-in-required" ? (
+                <p className="mt-3 text-center text-[12px] text-[#9AA0A6] dark:text-[#5F6368]">
+                  <a
+                    href="/auth/login"
+                    className="font-semibold text-black underline underline-offset-2 dark:text-[#E8EAED]"
+                  >
+                    Sign in
+                  </a>{" "}
+                  to create and save profiles.
+                </p>
+              ) : createError ? (
+                <p className="mt-3 text-center text-[12px] text-red-500">{createError}</p>
+              ) : null}
             </form>
           )}
         </div>

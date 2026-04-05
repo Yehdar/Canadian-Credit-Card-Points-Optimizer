@@ -16,8 +16,7 @@ export default function AuthButtons() {
     return (
       <a
         href="/auth/login"
-            className="animate-pulse-glow rounded-full bg-white px-4 py-1.5 text-[13px] font-semibold text-gray-900 transition-all hover:brightness-110 hover:scale-[1.03] active:scale-[0.98]"
-
+            className="animate-pulse-glow rounded-full bg-black px-4 py-1.5 text-[13px] font-semibold text-white transition-all hover:scale-[1.03] active:scale-[0.98] dark:bg-white dark:text-black"
       >
         Sign In
       </a>

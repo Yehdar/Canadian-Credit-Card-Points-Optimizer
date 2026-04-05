@@ -8,6 +8,7 @@ import com.creditoptimizer.service.ProfileService
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -46,59 +47,66 @@ fun Application.configureRouting() {
             }
 
             // ------------------------------------------------------------------
-            // Profiles  (CRUD)
+            // Profiles  (CRUD) — protected: requires a valid Auth0 JWT
             // ------------------------------------------------------------------
-            route("/profiles") {
+            authenticate("auth0-jwt") {
+                route("/profiles") {
 
-                // GET /api/profiles — list all saved profiles
-                get {
-                    call.respond(HttpStatusCode.OK, profileService.getAllProfiles())
-                }
-
-                // POST /api/profiles — create a new profile
-                post {
-                    val request = call.receive<CreateProfileRequest>()
-                    val profile = profileService.createProfile(request)
-                    call.respond(HttpStatusCode.Created, profile)
-                }
-
-                route("/{id}") {
-
-                    // GET /api/profiles/{id}
+                    // GET /api/profiles — list profiles for the authenticated user
                     get {
-                        val id = call.parameters["id"]?.toIntOrNull()
-                            ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid profile id"))
-
-                        val profile = profileService.getProfile(id)
-                            ?: return@get call.respond(HttpStatusCode.NotFound, mapOf("error" to "Profile not found"))
-
-                        call.respond(HttpStatusCode.OK, profile)
+                        val userId = call.principal<JWTPrincipal>()!!.payload.subject
+                        call.respond(HttpStatusCode.OK, profileService.getAllProfiles(userId))
                     }
 
-                    // PUT /api/profiles/{id} — full or partial update
-                    put {
-                        val id = call.parameters["id"]?.toIntOrNull()
-                            ?: return@put call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid profile id"))
+                    // POST /api/profiles — create a profile owned by the authenticated user
+                    post {
+                        val userId = call.principal<JWTPrincipal>()!!.payload.subject
+                        val request = call.receive<CreateProfileRequest>()
+                        val profile = profileService.createProfile(request, userId)
+                        call.respond(HttpStatusCode.Created, profile)
+                    }
 
-                        val request = call.receive<UpdateProfileRequest>()
-                        val updated = profileService.updateProfile(id, request)
+                    route("/{id}") {
 
-                        if (updated == null) {
-                            call.respond(HttpStatusCode.NotFound, mapOf("error" to "Profile not found"))
-                        } else {
-                            call.respond(HttpStatusCode.OK, updated)
+                        // GET /api/profiles/{id}
+                        get {
+                            val userId = call.principal<JWTPrincipal>()!!.payload.subject
+                            val id = call.parameters["id"]?.toIntOrNull()
+                                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid profile id"))
+
+                            val profile = profileService.getProfile(id, userId)
+                                ?: return@get call.respond(HttpStatusCode.NotFound, mapOf("error" to "Profile not found"))
+
+                            call.respond(HttpStatusCode.OK, profile)
                         }
-                    }
 
-                    // DELETE /api/profiles/{id}
-                    delete {
-                        val id = call.parameters["id"]?.toIntOrNull()
-                            ?: return@delete call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid profile id"))
+                        // PUT /api/profiles/{id} — full or partial update
+                        put {
+                            val userId = call.principal<JWTPrincipal>()!!.payload.subject
+                            val id = call.parameters["id"]?.toIntOrNull()
+                                ?: return@put call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid profile id"))
 
-                        if (profileService.deleteProfile(id)) {
-                            call.respond(HttpStatusCode.NoContent)
-                        } else {
-                            call.respond(HttpStatusCode.NotFound, mapOf("error" to "Profile not found"))
+                            val request = call.receive<UpdateProfileRequest>()
+                            val updated = profileService.updateProfile(id, request, userId)
+
+                            if (updated == null) {
+                                call.respond(HttpStatusCode.NotFound, mapOf("error" to "Profile not found"))
+                            } else {
+                                call.respond(HttpStatusCode.OK, updated)
+                            }
+                        }
+
+                        // DELETE /api/profiles/{id}
+                        delete {
+                            val userId = call.principal<JWTPrincipal>()!!.payload.subject
+                            val id = call.parameters["id"]?.toIntOrNull()
+                                ?: return@delete call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid profile id"))
+
+                            if (profileService.deleteProfile(id, userId)) {
+                                call.respond(HttpStatusCode.NoContent)
+                            } else {
+                                call.respond(HttpStatusCode.NotFound, mapOf("error" to "Profile not found"))
+                            }
                         }
                     }
                 }

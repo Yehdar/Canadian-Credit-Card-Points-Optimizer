@@ -166,7 +166,9 @@ export interface UpdateProfilePayload {
 }
 
 export async function fetchProfiles(): Promise<Profile[]> {
-  const res = await fetch(`${API_BASE}/api/profiles`);
+  const res = await fetch(`${API_BASE}/api/profiles`, {
+    headers: { ...(await authHeader()) },
+  });
   if (!res.ok) throw new Error(`Failed to fetch profiles: ${res.status}`);
   return res.json();
 }
@@ -174,7 +176,7 @@ export async function fetchProfiles(): Promise<Profile[]> {
 export async function createProfile(payload: CreateProfilePayload): Promise<Profile> {
   const res = await fetch(`${API_BASE}/api/profiles`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`Failed to create profile: ${res.status}`);
@@ -184,7 +186,7 @@ export async function createProfile(payload: CreateProfilePayload): Promise<Prof
 export async function updateProfile(id: number, payload: UpdateProfilePayload): Promise<Profile> {
   const res = await fetch(`${API_BASE}/api/profiles/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`Failed to update profile: ${res.status}`);
@@ -192,7 +194,10 @@ export async function updateProfile(id: number, payload: UpdateProfilePayload): 
 }
 
 export async function deleteProfile(id: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/profiles/${id}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/api/profiles/${id}`, {
+    method: "DELETE",
+    headers: { ...(await authHeader()) },
+  });
   if (!res.ok) throw new Error(`Failed to delete profile: ${res.status}`);
 }
 

@@ -16,9 +16,10 @@ export default function AuthButtons() {
     return (
       <a
         href="/auth/login"
-        className="rounded-full bg-blue-600 px-4 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-blue-700"
+            className="animate-pulse-glow rounded-full bg-white px-4 py-1.5 text-[13px] font-semibold text-gray-900 transition-all hover:brightness-110 hover:scale-[1.03] active:scale-[0.98]"
+
       >
-        Sign in
+        Sign In
       </a>
     );
   }

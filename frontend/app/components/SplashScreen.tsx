@@ -81,16 +81,27 @@ export default function SplashScreen({ onDismiss }: SplashScreenProps) {
               Don't miss out on points. Maximize your rewards.
             </motion.p>
 
-            {/* CTA */}
-            <motion.button
-              onClick={handleEnter}
-              className="animate-pulse-glow mt-2 rounded-full bg-white px-8 py-3 text-[14px] font-semibold text-gray-900 transition-all hover:brightness-110 hover:scale-[1.03] active:scale-[0.98]"
+            {/* CTAs */}
+            <motion.div
+              className="mt-2 flex items-center gap-3"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.8 }}
             >
-              Sign In
-            </motion.button>
+              <a
+                href="/auth/login"
+                                className="animate-pulse-glow rounded-full bg-white px-8 py-3 text-[14px] font-semibold text-gray-900 transition-all hover:brightness-110 hover:scale-[1.03] active:scale-[0.98]"
+
+              >
+                Sign In
+              </a>
+              <button
+                onClick={handleEnter}
+                className="rounded-full border border-white/30 bg-white/10 px-8 py-3 text-[14px] font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/20 hover:scale-[1.03] active:scale-[0.98]"
+              >
+                Try It Out
+              </button>
+            </motion.div>
           </motion.div>
         </motion.div>
       )}

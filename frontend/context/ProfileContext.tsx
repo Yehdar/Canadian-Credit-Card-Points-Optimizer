@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useUser } from "@auth0/nextjs-auth0/client";
 import {
   createProfile as apiCreate,
   deleteProfile as apiDelete,
@@ -39,16 +40,29 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
   const [isLoadingProfiles, setIsLoadingProfiles] = useState(true);
 
+  const { user, isLoading: isAuthLoading } = useUser();
+
   useEffect(() => {
+    if (isAuthLoading) return;
+
+    if (!user) {
+      // Logged out — clear all profile state
+      setProfiles([]);
+      setActiveProfile(null);
+      setIsLoadingProfiles(false);
+      return;
+    }
+
+    // Logged in — fetch this user's profiles
+    setIsLoadingProfiles(true);
     fetchProfiles()
       .then((data) => {
         setProfiles(data);
-        // Auto-select the first profile if one exists
         if (data.length > 0) setActiveProfile(data[0]);
       })
       .catch(console.error)
       .finally(() => setIsLoadingProfiles(false));
-  }, []);
+  }, [user, isAuthLoading]);
 
   const createProfile = useCallback(
     async (name: string, type: ProfileType, spending: SpendingBreakdown) => {

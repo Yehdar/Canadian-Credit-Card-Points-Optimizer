@@ -36,6 +36,9 @@ object SpendingProfiles : IntIdTable("spending_profiles") {
     // Full extracted context (spending, income, credit score, filters) saved with the arsenal (V11)
     val extractedSnapshotJson = text("extracted_snapshot_json").nullable()
 
+    // Auth0 user ID (sub claim) — nullable to preserve rows created before auth was added
+    val userId        = varchar("user_id", 100).nullable()
+
     val createdAt     = timestamp("created_at")
     val updatedAt     = timestamp("updated_at")
 }

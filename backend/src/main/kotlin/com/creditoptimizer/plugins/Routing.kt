@@ -38,12 +38,10 @@ fun Application.configureRouting() {
             // ------------------------------------------------------------------
             // Chat  (Gemini 2.0 Flash — Akinator-style card advisor)
             // ------------------------------------------------------------------
-            authenticate("auth0-jwt") {
-                post("/chat") {
-                    val request = call.receive<OptimizeRequest>()
-                    val response = geminiService.optimize(request)
-                    call.respond(HttpStatusCode.OK, response)
-                }
+            post("/chat") {
+                val request = call.receive<OptimizeRequest>()
+                val response = geminiService.optimize(request)
+                call.respond(HttpStatusCode.OK, response)
             }
 
             // ------------------------------------------------------------------

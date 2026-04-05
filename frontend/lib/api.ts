@@ -227,10 +227,7 @@ export interface OptimizeRequest {
 export async function sendOptimizeRequest(request: OptimizeRequest): Promise<ChatResponse> {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(await authHeader()),
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
   });
   if (!res.ok) throw new Error(`Optimize request failed: ${res.status}`);

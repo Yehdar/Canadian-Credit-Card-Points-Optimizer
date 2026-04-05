@@ -26,9 +26,12 @@ application {
 }
 
 tasks.named<JavaExec>("run") {
-    val geminiKey = localProps.getProperty("geminiApiKey")
-        ?: System.getenv("GEMINI_API_KEY")
-    environment("GEMINI_API_KEY", geminiKey)
+    val geminiKey     = localProps.getProperty("geminiApiKey")  ?: System.getenv("GEMINI_API_KEY")
+    val auth0Domain   = localProps.getProperty("auth0Domain")   ?: System.getenv("AUTH0_DOMAIN")
+    val auth0Audience = localProps.getProperty("auth0Audience") ?: System.getenv("AUTH0_AUDIENCE")
+    environment("GEMINI_API_KEY",  geminiKey)
+    environment("AUTH0_DOMAIN",    auth0Domain)
+    environment("AUTH0_AUDIENCE",  auth0Audience)
 }
 
 repositories {
@@ -55,6 +58,8 @@ dependencies {
     implementation("io.ktor:ktor-client-core:$ktor_version")
     implementation("io.ktor:ktor-client-cio:$ktor_version")
     implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
+    implementation("io.ktor:ktor-server-auth:$ktor_version")
+    implementation("io.ktor:ktor-server-auth-jwt:$ktor_version")
     testImplementation("io.ktor:ktor-server-tests-jvm:$ktor_version")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
 }

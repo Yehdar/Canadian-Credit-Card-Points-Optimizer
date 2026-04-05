@@ -7,6 +7,7 @@ import com.creditoptimizer.service.GeminiService
 import com.creditoptimizer.service.ProfileService
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -16,6 +17,7 @@ fun Application.configureRouting() {
     install(CORS) {
         allowHost("localhost:3000")
         allowHeader(HttpHeaders.ContentType)
+        allowHeader(HttpHeaders.Authorization)
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
         allowMethod(HttpMethod.Put)
@@ -35,10 +37,12 @@ fun Application.configureRouting() {
             // ------------------------------------------------------------------
             // Chat  (Gemini 2.0 Flash — Akinator-style card advisor)
             // ------------------------------------------------------------------
-            post("/chat") {
-                val request = call.receive<OptimizeRequest>()
-                val response = geminiService.optimize(request)
-                call.respond(HttpStatusCode.OK, response)
+            authenticate("auth0-jwt") {
+                post("/chat") {
+                    val request = call.receive<OptimizeRequest>()
+                    val response = geminiService.optimize(request)
+                    call.respond(HttpStatusCode.OK, response)
+                }
             }
 
             // ------------------------------------------------------------------

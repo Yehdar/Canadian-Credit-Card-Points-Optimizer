@@ -1,5 +1,21 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
+async function getAccessToken(): Promise<string | null> {
+  try {
+    const res = await fetch("/auth/access-token");
+    if (!res.ok) return null;
+    const data = await res.json() as { token?: string };
+    return data.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function authHeader(): Promise<Record<string, string>> {
+  const token = await getAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export type ProfileType = "personal" | "business" | "partner";
 
 export interface CardSummary {
@@ -206,7 +222,10 @@ export interface OptimizeRequest {
 export async function sendOptimizeRequest(request: OptimizeRequest): Promise<ChatResponse> {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(await authHeader()),
+    },
     body: JSON.stringify(request),
   });
   if (!res.ok) throw new Error(`Optimize request failed: ${res.status}`);

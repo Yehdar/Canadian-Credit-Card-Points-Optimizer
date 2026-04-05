@@ -1,5 +1,6 @@
 package com.creditoptimizer
 
+import com.creditoptimizer.plugins.configureAuth
 import com.creditoptimizer.plugins.configureDatabase
 import com.creditoptimizer.plugins.configureRouting
 import com.creditoptimizer.plugins.configureSerialization
@@ -16,6 +17,7 @@ fun main() {
 fun Application.module() {
     configureSerialization()
     configureStatusPages()
+    configureAuth()
     configureDatabase()
     configureRouting()
 }

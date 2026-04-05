@@ -17,7 +17,11 @@
       "Bash(psql -U postgres -c \"CREATE DATABASE creditoptimizer;\")",
       "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/16/bin/psql\" -U postgres -c \"DROP DATABASE IF EXISTS creditoptimizer; CREATE DATABASE creditoptimizer;\")",
       "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/16/bin/psql\" -U postgres -c \"DROP DATABASE IF EXISTS creditoptimizer;\")",
-      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/16/bin/psql\" -U postgres -c \"CREATE DATABASE creditoptimizer;\")"
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/16/bin/psql\" -U postgres -c \"CREATE DATABASE creditoptimizer;\")",
+      "Read(//c/Users/Stuart/.claude/plans/**)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Stuart\\.claude\\plans"
     ]
   }
 }

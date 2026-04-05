@@ -17,6 +17,8 @@ An AI-powered app to maximize credit card rewards for Canadians based on financi
 - **PostgreSQL:** Runs as native Windows service `postgresql-x64-16`. Start via `net start postgresql-x64-16` (admin terminal) or `services.msc`.
 - **Env var:** `NEXT_PUBLIC_API_URL` defaults to `http://localhost:8080`
 - **Gemini API Key:** Set `GEMINI_API_KEY` in `backend/local.properties` or as an environment variable before starting the backend.
+- **Auth0 (Frontend):** Create `frontend/.env.local` with `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`, `AUTH0_SECRET`, `APP_BASE_URL`, `NEXT_PUBLIC_API_URL`, and `AUTH0_AUDIENCE`. See README for full setup.
+- **Auth0 (Backend):** Add `auth0Domain` and `auth0Audience` to `backend/local.properties`. These are read into `application.conf` under `auth0 { domain, audience }`.
 
 ---
 
@@ -33,7 +35,7 @@ graph TB
 
     Browser -->|"HTTP / fetch"| Next
     Next -->|"SSR / RSC"| Browser
-    Browser -->|"REST JSON\nPOST /api/recommendations\nGET /api/profiles\netc."| Ktor
+    Browser -->|"REST JSON\nPOST /api/chat\nGET /api/profiles\netc."| Ktor
     Ktor -->|"Exposed DSL\nHikariCP pool"| PG
     Ktor -->|"JSON response"| Browser
 
@@ -54,33 +56,6 @@ graph TB
 
 ```mermaid
 erDiagram
-    credit_cards {
-        serial id PK
-        varchar name
-        varchar issuer
-        numeric annual_fee_cad
-        varchar points_currency
-        numeric cpp
-        varchar card_type
-        boolean is_points_based
-        boolean no_foreign_fee
-        boolean airport_lounge
-        boolean priority_travel
-        boolean free_checked_bag
-        numeric rogers_bonus_multiplier
-        numeric amazon_prime_multiplier
-        integer min_income_personal
-        integer min_income_household
-        integer min_credit_score
-    }
-
-    card_earn_rates {
-        serial id PK
-        integer card_id FK
-        varchar category
-        numeric earn_rate
-    }
-
     spending_profiles {
         serial id PK
         varchar name
@@ -101,53 +76,51 @@ erDiagram
         integer annual_income
         integer household_income
         integer estimated_credit_score
-        timestamp created_at
-        timestamp updated_at
+        varchar user_id "Auth0 sub claim (nullable)"
+        text saved_cards_json
+        text extracted_snapshot_json
+        timestamptz created_at
+        timestamptz updated_at
     }
-
-    credit_cards ||--o{ card_earn_rates : "has earn rates"
 ```
 
-### Recommendation Request Flow
+> `credit_cards` and `card_earn_rates` were dropped in V9 — the card catalog now lives entirely inside Gemini.
+
+### Chat / Optimization Flow
 
 ```mermaid
 sequenceDiagram
     participant U as User (Browser)
-    participant F as SpendingForm
-    participant H as useRecommendations
+    participant CP as ChatPanel
+    participant UC as useChat
     participant A as api.ts
-    participant K as Ktor /api/recommendations
-    participant PS as PointsService
-    participant DB as PostgreSQL
+    participant K as Ktor /api/chat
+    participant GS as GeminiService
+    participant G as Gemini 2.5 Flash
 
-    U->>F: Fill spending + filters, click submit
-    F->>H: calculate(SpendingFormSubmission)
-    H->>H: Check cache (spending deep-equal + filters JSON)
-    alt Cache miss
-        H->>A: fetchRecommendations(args)
-        A->>K: POST /api/recommendations
-        K->>PS: calculateRecommendations(request)
-        PS->>DB: Load all cards + earn rates (single transaction)
-        DB-->>PS: CardRow list
-        PS->>PS: Apply FormFilters (network, fee, reward type, issuer, benefits)
-        PS->>PS: Hard-filter by income / credit score eligibility
-        PS->>PS: Apply Rogers / Amazon Prime multipliers
-        PS->>PS: Calculate: spent×12×earnRate×cpp/100 per category
-        PS->>PS: Fallback to "other" rate for unmatched categories
-        PS->>PS: Sort by netAnnualValue DESC
-        PS-->>K: List<RecommendationResult>
-        K-->>A: JSON array
-        A-->>H: RecommendationResult[]
-    end
-    H-->>F: results (min 800ms perceived load)
-    F->>U: Render CardResults with breakdown
+    U->>CP: Type message (spending / preferences)
+    CP->>UC: sendMessage(text)
+    UC->>A: sendOptimizeRequest(OptimizeRequest)
+    A->>K: POST /api/chat (no auth required)
+    K->>GS: optimize(request)
+    GS->>G: system prompt + user message
+    G-->>GS: response with <recommendation_data> JSON block
+    GS-->>K: ChatResponse { message, isDone }
+    K-->>A: JSON
+    A-->>UC: ChatResponse
+    UC->>UC: parse <recommendation_data> → arsenalCards + recommendationData
+    UC-->>CP: messages updated, isDone=true
+    CP->>U: render message; ArsenalModal opens with ranked cards
 ```
 
 ### Frontend Component Tree
 
 ```mermaid
 graph TD
-    Layout["layout.tsx\nThemeProvider + ProfileProvider\nNavbar + ThemeToggle"]
+    AP["AuthProvider\nAuth0Provider client boundary"]
+    Layout["layout.tsx\nAuthProvider > ThemeProvider > ProfileProvider\nNavbar + AuthButtons + ThemeToggle"]
+    AB["AuthButtons\nSign In / avatar / Sign out"]
+    SS["SplashScreen\nSign In + Try It Out"]
     Page["page.tsx\nSplit-pane: chat left / live profile right"]
     PS["ProfileSwitcher\nProfile tabs + create/delete"]
     CP["ChatPanel\nConversational input + message list"]
@@ -157,7 +130,10 @@ graph TD
     TC["ThreeDCard\nWebGL card renderer (dynamic, no SSR)"]
     NMK["NetworkMarks.tsx\nVisaMark MastercardMark AmexMark"]
 
+    AP --> Layout
+    Layout --> AB
     Layout --> Page
+    Page --> SS
     Page --> PS
     Page --> CP
     Page --> LPS
@@ -173,27 +149,25 @@ graph LR
     App["Application.kt\nmain() → module()"]
     DB2["plugins/Database.kt\nHikariCP + Flyway + Exposed"]
     Ser["plugins/Serialization.kt\nContentNegotiation JSON"]
-    Rou["plugins/Routing.kt\nAll routes + CORS"]
+    Auth["plugins/Auth.kt\nJWKS JWT validation\nauthenticate(auth0-jwt)"]
+    Rou["plugins/Routing.kt\nAll routes + CORS\n/api/profiles → auth0-jwt"]
 
-    Tab["db/Tables.kt\nCreditCards\nCardEarnRates\nSpendingProfiles"]
+    Tab["db/Tables.kt\nSpendingProfiles (user_id)"]
 
-    Dtos["dto/Dtos.kt\nRecommendationsRequest\nSpendingBreakdown\nFormFilters / BenefitFilters\nCardSummary\nCategoryBreakdown\nRecommendationResult"]
+    Dtos["dto/Dtos.kt\nSpendingBreakdown\nFormFilters / BenefitFilters"]
     PDtos["dto/ProfileDtos.kt\nProfileType\nCreateProfileRequest\nUpdateProfileRequest\nProfileResponse"]
     CDtos["dto/ChatDtos.kt\nOptimizeRequest\nChatResponse"]
 
-    PtSvc["service/PointsService.kt\ngetAllCards()\ncalculateRecommendations()"]
-    PrSvc["service/ProfileService.kt\ngetAllProfiles()\ngetProfile()\ncreateProfile()\nupdateProfile()\ndeleteProfile()"]
+    PrSvc["service/ProfileService.kt\ngetAllProfiles(userId)\ngetProfile(id, userId)\ncreateProfile(req, userId)\nupdateProfile(id, req, userId)\ndeleteProfile(id, userId)"]
     GemSvc["service/GeminiService.kt\noptimize()\nSYSTEM_PROMPT"]
     PNF["service/ProfileNotFoundException.kt"]
 
     App --> DB2
     App --> Ser
+    App --> Auth
     App --> Rou
-    Rou --> PtSvc
     Rou --> PrSvc
     Rou --> GemSvc
-    PtSvc --> Tab
-    PtSvc --> Dtos
     PrSvc --> Tab
     PrSvc --> PDtos
     PrSvc --> PNF
@@ -209,10 +183,11 @@ graph LR
 - **Naming Conventions:**
     - Frontend: PascalCase for Components, camelCase for hooks/utils.
     - Backend: camelCase for variables/functions, PascalCase for Classes.
-- **Points Logic:** All calculation logic lives in `service/PointsService.kt`. Frontend only displays results.
+- **Points Logic:** All card calculation logic lives inside Gemini (via `GeminiService.kt`). Frontend only displays results.
 - **API Style:** RESTful JSON. Use `kotlinx.serialization` for DTOs. JSON is configured with `prettyPrint = true`, `isLenient = true`, `ignoreUnknownKeys = true` — null fields are included in responses.
-- **Profiles are global** — no user authentication exists. All profiles are shared across sessions.
-- **No Auth:** There is no JWT, no login/register, no AuthService. Do not add auth without a dedicated migration and plugin.
+- **Auth:** Frontend uses `@auth0/nextjs-auth0` v4 (`proxy.ts` pattern — not `middleware.ts`). Backend validates JWTs via JWKS (`plugins/Auth.kt`). `/api/chat` is open to unauthenticated users; all `/api/profiles` routes require a valid Bearer token and scope to the caller's `sub`.
+- **Per-user profiles:** All profile service methods accept and filter by `userId` (Auth0 `sub` claim). Unauthenticated create/read/update/delete attempts return 401.
+- **Auth0 SDK v4 notes:** Routes live at `/auth/*` (not `/api/auth/*`). Use `Auth0Provider` (not `UserProvider`). `proxy.ts` replaces `middleware.ts`. `httpTimeout: 15000` is required to prevent Edge Runtime discovery timeouts.
 
 ---
 
@@ -221,24 +196,22 @@ graph LR
 ### Migration History
 | Migration | Description |
 |-----------|-------------|
-| V1 | Create `credit_cards` and `card_earn_rates` (historical — tables dropped in V9) |
-| V2 | Seed 11 initial cards (historical) |
-| V3 | Create `spending_profiles` with 8 spend columns + `set_updated_at()` trigger |
-| V4 | Add 5 spend columns to `spending_profiles`; expand `card_earn_rates` categories (historical) |
-| V5–V8 | Add card benefit/eligibility columns and expand catalog to 52 cards (historical) |
-| V9 | **Drop `card_earn_rates` and `credit_cards`** — recommendations moved entirely to Gemini |
+| V1 | **Consolidated schema (current).** Creates `spending_profiles` with all 13 spend columns, income/credit fields, `user_id`, `saved_cards_json`, `extracted_snapshot_json`, `set_updated_at()` trigger, and `idx_spending_profiles_user_id` index. All prior migrations (V2–V10) were squashed into this file — **requires a fresh database** (`DROP DATABASE creditoptimizer; CREATE DATABASE creditoptimizer`). |
 
-### `spending_profiles` (only table remaining after V9)
+### `spending_profiles` (sole table)
 | Column | Type | Notes |
 |--------|------|-------|
-| id | SERIAL PK (IntIdTable) | |
+| id | SERIAL PK | |
 | name | VARCHAR(100) | |
-| profile_type | VARCHAR(20) | 'personal', 'business', or 'partner' |
-| groceries … foreign_purchases | NUMERIC(10,2) | 13 monthly spend columns (added incrementally V3/V4) |
-| annual_income | INTEGER nullable | V7 |
-| household_income | INTEGER nullable | V7 |
-| estimated_credit_score | INTEGER nullable | V7 |
-| created_at / updated_at | TIMESTAMPTZ | Auto-managed by DB trigger `set_updated_at()` |
+| profile_type | VARCHAR(20) | `'personal'`, `'business'`, or `'partner'` |
+| groceries … foreign_purchases | NUMERIC(10,2) | 13 monthly spend columns |
+| annual_income | INTEGER nullable | |
+| household_income | INTEGER nullable | |
+| estimated_credit_score | INTEGER nullable | |
+| saved_cards_json | TEXT nullable | JSON array of `SavedCard` objects |
+| extracted_snapshot_json | TEXT nullable | Gemini-extracted spending snapshot |
+| user_id | VARCHAR(100) nullable | Auth0 `sub` claim; scopes row to a single account |
+| created_at / updated_at | TIMESTAMPTZ | `updated_at` auto-managed by DB trigger |
 
 ### Reward Value Formula (computed by Gemini)
 - Cash-back: `valueCAD = monthly_spend × 12 × rate / 100`
@@ -251,17 +224,17 @@ Gemini enforces eligibility gates (Visa Infinite, World Elite, Amex Platinum inc
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/health` | Health check → `{ "status": "ok" }` |
-| POST | `/api/chat` | Single-shot Gemini optimization → `{ message, isDone }` |
-| GET | `/api/profiles` | List all profiles (ordered by createdAt DESC) |
-| POST | `/api/profiles` | Create profile (201 Created) |
-| GET | `/api/profiles/{id}` | Get single profile |
-| PUT | `/api/profiles/{id}` | Partial update profile |
-| DELETE | `/api/profiles/{id}` | Delete profile (204 No Content) |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/health` | none | Health check → `{ "status": "ok" }` |
+| POST | `/api/chat` | none (open) | Single-shot Gemini optimization → `{ message, isDone }` |
+| GET | `/api/profiles` | Bearer JWT | List caller's profiles (ordered by createdAt DESC) |
+| POST | `/api/profiles` | Bearer JWT | Create profile scoped to caller (201 Created) |
+| GET | `/api/profiles/{id}` | Bearer JWT | Get single profile (404 if wrong user) |
+| PUT | `/api/profiles/{id}` | Bearer JWT | Partial update profile (404 if wrong user) |
+| DELETE | `/api/profiles/{id}` | Bearer JWT | Delete profile (204 No Content; 404 if wrong user) |
 
-**Error codes:** 400 (invalid JSON / missing required fields), 404 (not found), 422 (validation failure — blank name, invalid profileType).
+**Error codes:** 400 (invalid JSON / missing required fields), 401 (missing or invalid token), 404 (not found or belongs to another user), 422 (validation failure — blank name, invalid profileType).
 
 ### POST /api/chat
 Gemini receives the user's raw message (`userText`) and extracts spending, income, credit score, reward type, and fee preference from it. It then calculates all card values internally and returns a `<recommendation_data>` JSON block embedded in `message`.
@@ -291,19 +264,20 @@ Gemini receives the user's raw message (`userText`) and extracts spending, incom
 ## Package Structure (Backend)
 ```
 com.creditoptimizer
-├── Application.kt                # main() → configures Serialization, Database, Routing
-├── db/Tables.kt                  # Exposed DSL: SpendingProfiles only (card catalog removed in V9)
+├── Application.kt                # main() → configures Serialization, Database, Auth, Routing
+├── db/Tables.kt                  # Exposed DSL: SpendingProfiles (incl. userId column)
 ├── dto/
 │   ├── Dtos.kt                   # SpendingBreakdown, FormFilters, BenefitFilters (for OptimizeRequest)
 │   ├── ProfileDtos.kt            # ProfileType (constants), CreateProfileRequest, UpdateProfileRequest, ProfileResponse
 │   └── ChatDtos.kt               # OptimizeRequest, ChatResponse
 ├── service/
-│   ├── ProfileService.kt         # getAllProfiles(), getProfile(), createProfile(), updateProfile(), deleteProfile()
+│   ├── ProfileService.kt         # all 5 methods accept userId: String; filter + stamp by user_id
 │   ├── GeminiService.kt          # optimize() — calls Gemini 2.5 Flash, returns ChatResponse with embedded JSON
 │   └── ProfileNotFoundException.kt
 └── plugins/
+    ├── Auth.kt                   # install(Authentication) { jwt("auth0-jwt") } via JWKS JwkProviderBuilder
     ├── Database.kt               # HikariCP pool (max 10) + Flyway migrations + Exposed connection
-    ├── Routing.kt                # 7 endpoints + CORS (allow localhost:3000, GET/POST/PUT/DELETE)
+    ├── Routing.kt                # 7 endpoints + CORS; /api/profiles wrapped in authenticate("auth0-jwt")
     └── Serialization.kt          # ContentNegotiation JSON (prettyPrint, isLenient, ignoreUnknownKeys)
 ```
 
@@ -311,40 +285,48 @@ com.creditoptimizer
 
 ## Frontend Component Structure
 ```
-frontend/app/
-├── page.tsx                      # Split-pane: chat (left 60%) + live profile sidebar (right 40%)
-├── layout.tsx                    # Root layout: ThemeProvider > ProfileProvider > navbar + ThemeToggle
-├── globals.css                   # Tailwind v4 + Material Design 3 tokens + scrollbar styles
-└── components/
-    ├── ChatPanel.tsx              # Conversational input + message list; emits onSendMessage
-    ├── ArsenalModal.tsx           # Full-screen modal: 3D card stage + stats grid + card tray
-    ├── ThreeDCard.tsx             # WebGL Three.js card renderer (dynamically imported, SSR disabled)
-    ├── LiveProfileSidebar.tsx     # Shows extractedData + active profile spending summary
-    ├── CardResults.tsx            # Ranked ResultCard list with breakdown, progress bars, eligibility alerts
-    ├── NetworkMarks.tsx           # VisaMark / MastercardMark / AmexMark SVGs (className prop for size)
-    ├── ProfileSwitcher.tsx        # Profile tabs + inline create form + hover-delete button
-    ├── SpendingForm.tsx           # Orchestrator: composes 6 modules, builds FormFilters, submits
-    ├── SpendingModule.tsx         # 13 spend categories (monthly/yearly toggle)
-    ├── PreferencesModule.tsx      # Reward type, fee pref, income (personal/household), credit score
-    ├── BonusesModule.tsx          # Rogers/Fido/Shaw toggle + Amazon Prime toggle
-    ├── InstitutionsModule.tsx     # Issuer filter pills (Select All/Clear All)
-    ├── NetworkModule.tsx          # Visa/MC/Amex toggles (min 1 required)
-    ├── BenefitsModule.tsx         # 4 perk filters with keyword search
-    ├── SaveProfilePrompt.tsx      # One-time anonymous → profile save dialog
-    └── ThemeToggle.tsx            # Sun/moon toggle (top-right navbar)
-
 frontend/
+├── proxy.ts                      # Next.js 16 proxy — routes all requests through auth0.middleware()
+├── next.config.ts                # Image remote patterns for Google/Auth0 avatars
+├── app/
+│   ├── page.tsx                  # Split-pane: chat (left 60%) + live profile sidebar (right 40%)
+│   ├── layout.tsx                # Root layout: AuthProvider > ThemeProvider > ProfileProvider
+│   │                             # navbar + AuthButtons + ThemeToggle
+│   ├── globals.css               # Tailwind v4 + Material Design 3 tokens + scrollbar styles
+│   └── components/
+│       ├── AuthProvider.tsx      # "use client" wrapper for Auth0Provider (required for RSC layout)
+│       ├── AuthButtons.tsx       # Sign In link / Google avatar + name / Sign out; reads useUser()
+│       ├── SplashScreen.tsx      # Full-screen intro: Sign In → /auth/login; Try It Out → dismiss
+│       ├── ChatPanel.tsx         # Conversational input + message list; emits onSendMessage
+│       ├── ArsenalModal.tsx      # Full-screen modal: 3D card stage + stats grid + card tray
+│       ├── ThreeDCard.tsx        # WebGL Three.js card renderer (dynamically imported, SSR disabled)
+│       ├── LiveProfileSidebar.tsx # Shows extractedData + active profile spending summary
+│       ├── CardResults.tsx       # Ranked ResultCard list with breakdown, progress bars, eligibility alerts
+│       ├── NetworkMarks.tsx      # VisaMark / MastercardMark / AmexMark SVGs (className prop for size)
+│       ├── ProfileSwitcher.tsx   # Profile tabs + inline create form + hover-delete; shows sign-in
+│       │                         # prompt on 401 ("Sign in to create and save profiles.")
+│       ├── SpendingForm.tsx      # Orchestrator: composes 6 modules, builds FormFilters, submits
+│       ├── SpendingModule.tsx    # 13 spend categories (monthly/yearly toggle)
+│       ├── PreferencesModule.tsx # Reward type, fee pref, income (personal/household), credit score
+│       ├── BonusesModule.tsx     # Rogers/Fido/Shaw toggle + Amazon Prime toggle
+│       ├── InstitutionsModule.tsx # Issuer filter pills (Select All/Clear All)
+│       ├── NetworkModule.tsx     # Visa/MC/Amex toggles (min 1 required)
+│       ├── BenefitsModule.tsx    # 4 perk filters with keyword search
+│       ├── SaveProfilePrompt.tsx # One-time anonymous → profile save dialog
+│       └── ThemeToggle.tsx       # Sun/moon toggle (top-right navbar)
 ├── context/
-│   ├── ProfileContext.tsx         # profiles[], activeProfile, setActiveProfile, createProfile,
+│   ├── ProfileContext.tsx        # profiles[], activeProfile, setActiveProfile, createProfile,
 │   │                             # saveActiveProfileSpending, removeProfile — hook: useProfile()
-│   └── ThemeContext.tsx           # theme ("light"|"dark"), toggleTheme — persists to localStorage
+│   │                             # Re-fetches on auth state change via useUser(); clears on logout
+│   └── ThemeContext.tsx          # theme ("light"|"dark"), toggleTheme — persists to localStorage
 ├── hooks/
-│   ├── useChat.ts                 # sendMessage(), messages, isLoading, recommendationData, arsenalCards, isDone
-│   │                             # Calls /api/chat, parses <recommendation_data> JSON from Gemini response
-│   └── useRecommendations.ts     # calculate(), clearResults(), results, isCalculating, error
+│   ├── useChat.ts                # sendMessage(), messages, isLoading, recommendationData, arsenalCards, isDone
+│   │                             # Calls /api/chat (no auth), parses <recommendation_data> JSON from Gemini
+│   └── useRecommendations.ts    # calculate(), clearResults(), results, isCalculating, error
 │                                 # Caches last spending (deep-equal) + filters (JSON); min 800ms load
 └── lib/
-    └── api.ts                    # All shared types + fetch wrappers
+    ├── api.ts                    # All shared types + fetch wrappers (profile calls include Bearer token)
+    └── auth0.ts                  # Auth0Client singleton (domain, clientId, secret, audience, httpTimeout)
 ```
 
 **Shared types exported from `api.ts`:**
@@ -354,7 +336,7 @@ frontend/
 
 **Network mark SVGs** (`VisaMark`, `MastercardMark`, `AmexMark`) are shared via `NetworkMarks.tsx`. Accept a `className` prop for size overrides (defaults: `h-4`/`h-5`/`h-4`).
 
-**Chat → Arsenal flow:** `useChat` sends `OptimizeRequest` to `/api/chat` → Gemini returns `<recommendation_data>` JSON embedded in response → `useChat` parses it into `recommendationData` (SpendingFormSubmission) and `arsenalCards` (name/purpose/description/visualConfig) → `page.tsx` calls `calculate(recommendationData)` → `/api/recommendations` returns ranked results → `ArsenalModal` opens filtered to the Gemini-selected cards.
+**Chat → Arsenal flow:** `useChat` sends `OptimizeRequest` to `/api/chat` → Gemini returns `<recommendation_data>` JSON embedded in response → `useChat` parses it into `recommendationData` (SpendingFormSubmission) and `arsenalCards` (name/purpose/description/visualConfig) → `page.tsx` calls `calculate(recommendationData)` → `useRecommendations` caches + returns ranked results → `ArsenalModal` opens filtered to the Gemini-selected cards.
 
 ---
 
@@ -367,4 +349,4 @@ frontend/
 ## Regional Constraints (Crucial)
 - Focus ONLY on Canadian credit card issuers: Amex CA, RBC, TD, Scotiabank, BMO, CIBC, National Bank, Desjardins, plus telecom (Rogers, Fido), retailers (PC Financial, Canadian Tire, MBNA/Amazon), and alternative banks (Wealthsimple, EQ Bank, Neo Financial, Home Trust, Manulife, Meridian, ATB).
 - Currency is always CAD.
-- 52 cards in the catalog (V1–V8 migrations).
+- The card catalog (52 cards) lives entirely within Gemini's system prompt — there is no card table in the database.

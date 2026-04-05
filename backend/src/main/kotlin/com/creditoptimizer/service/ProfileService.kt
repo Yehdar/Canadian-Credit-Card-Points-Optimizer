@@ -17,20 +17,21 @@ class ProfileService {
     // Public API
     // -----------------------------------------------------------------------
 
-    fun getAllProfiles(): List<ProfileResponse> = transaction {
+    fun getAllProfiles(userId: String): List<ProfileResponse> = transaction {
         SpendingProfiles.selectAll()
+            .where { SpendingProfiles.userId eq userId }
             .orderBy(SpendingProfiles.createdAt, SortOrder.DESC)
             .map { it.toResponse() }
     }
 
-    fun getProfile(id: Int): ProfileResponse? = transaction {
+    fun getProfile(id: Int, userId: String): ProfileResponse? = transaction {
         SpendingProfiles.selectAll()
-            .where { SpendingProfiles.id eq id }
+            .where { (SpendingProfiles.id eq id) and (SpendingProfiles.userId eq userId) }
             .singleOrNull()
             ?.toResponse()
     }
 
-    fun createProfile(request: CreateProfileRequest): ProfileResponse {
+    fun createProfile(request: CreateProfileRequest, userId: String): ProfileResponse {
         require(request.name.isNotBlank()) { "Profile name must not be blank" }
         require(request.profileType in ProfileType.all) {
             "profileType must be one of: ${ProfileType.all.joinToString()}"
@@ -40,6 +41,7 @@ class ProfileService {
             val insertedId = SpendingProfiles.insertAndGetId {
                 it[name]                  = request.name.trim()
                 it[profileType]           = request.profileType
+                it[SpendingProfiles.userId] = userId
                 it[groceries]             = request.spending.groceries.toBigDecimal()
                 it[dining]                = request.spending.dining.toBigDecimal()
                 it[gas]                   = request.spending.gas.toBigDecimal()
@@ -63,9 +65,9 @@ class ProfileService {
         }
     }
 
-    fun updateProfile(id: Int, request: UpdateProfileRequest): ProfileResponse? = transaction {
+    fun updateProfile(id: Int, request: UpdateProfileRequest, userId: String): ProfileResponse? = transaction {
         val existing = SpendingProfiles.selectAll()
-            .where { SpendingProfiles.id eq id }
+            .where { (SpendingProfiles.id eq id) and (SpendingProfiles.userId eq userId) }
             .singleOrNull() ?: return@transaction null
 
         request.profileType?.let {
@@ -75,7 +77,7 @@ class ProfileService {
         val currentSpending = existing.toSpendingBreakdown()
         val merged = request.spending ?: currentSpending
 
-        SpendingProfiles.update({ SpendingProfiles.id eq id }) {
+        SpendingProfiles.update({ (SpendingProfiles.id eq id) and (SpendingProfiles.userId eq userId) }) {
             it[name]                  = request.name?.trim() ?: existing[name]
             it[profileType]           = request.profileType  ?: existing[profileType]
             it[groceries]             = merged.groceries.toBigDecimal()
@@ -93,11 +95,11 @@ class ProfileService {
             it[foreignPurchases]      = merged.foreignPurchases.toBigDecimal()
             it[savedCardsJson]        = request.savedCards
                 ?.let { cards -> json.encodeToString(cards) }
-                ?: existing[savedCardsJson]   // preserve existing value if savedCards not supplied
+                ?: existing[savedCardsJson]
             it[extractedSnapshotJson] = request.extractedSnapshot
                 ?.let { snap -> json.encodeToString(snap) }
                 ?: existing[extractedSnapshotJson]
-            // updated_at is handled by the DB trigger in V3 migration
+            // updated_at is handled by the DB trigger
         }
 
         SpendingProfiles.selectAll()
@@ -106,8 +108,10 @@ class ProfileService {
             .toResponse()
     }
 
-    fun deleteProfile(id: Int): Boolean = transaction {
-        SpendingProfiles.deleteWhere { SpendingProfiles.id eq id } > 0
+    fun deleteProfile(id: Int, userId: String): Boolean = transaction {
+        SpendingProfiles.deleteWhere {
+            (SpendingProfiles.id eq id) and (SpendingProfiles.userId eq userId)
+        } > 0
     }
 
     // -----------------------------------------------------------------------

@@ -1,5 +1,21 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
+async function getAccessToken(): Promise<string | null> {
+  try {
+    const res = await fetch("/auth/access-token");
+    if (!res.ok) return null;
+    const data = await res.json() as { token?: string };
+    return data.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function authHeader(): Promise<Record<string, string>> {
+  const token = await getAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export type ProfileType = "personal" | "business" | "partner";
 
 export interface CardSummary {
@@ -150,7 +166,9 @@ export interface UpdateProfilePayload {
 }
 
 export async function fetchProfiles(): Promise<Profile[]> {
-  const res = await fetch(`${API_BASE}/api/profiles`);
+  const res = await fetch(`${API_BASE}/api/profiles`, {
+    headers: { ...(await authHeader()) },
+  });
   if (!res.ok) throw new Error(`Failed to fetch profiles: ${res.status}`);
   return res.json();
 }
@@ -158,7 +176,7 @@ export async function fetchProfiles(): Promise<Profile[]> {
 export async function createProfile(payload: CreateProfilePayload): Promise<Profile> {
   const res = await fetch(`${API_BASE}/api/profiles`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`Failed to create profile: ${res.status}`);
@@ -168,7 +186,7 @@ export async function createProfile(payload: CreateProfilePayload): Promise<Prof
 export async function updateProfile(id: number, payload: UpdateProfilePayload): Promise<Profile> {
   const res = await fetch(`${API_BASE}/api/profiles/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`Failed to update profile: ${res.status}`);
@@ -176,7 +194,10 @@ export async function updateProfile(id: number, payload: UpdateProfilePayload): 
 }
 
 export async function deleteProfile(id: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/profiles/${id}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/api/profiles/${id}`, {
+    method: "DELETE",
+    headers: { ...(await authHeader()) },
+  });
   if (!res.ok) throw new Error(`Failed to delete profile: ${res.status}`);
 }
 

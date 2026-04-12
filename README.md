@@ -1,4 +1,4 @@
-# Canadian Credit Card Points Optimizer
+# TESTING 
 
 An AI-powered application that maximizes credit card rewards for Canadians based on their financial and lifestyle profiles.
 

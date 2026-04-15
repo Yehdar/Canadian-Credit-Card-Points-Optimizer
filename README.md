@@ -4,7 +4,7 @@ An AI-powered application that maximizes credit card rewards for Canadians based
 
 ## Recorded Demo
 
-[![Project Showcase](https://github.com/Yehdar/Canadian-Credit-Card-Points-Optimizer/demo/thumbnail.png)](https://drive.google.com/file/d/1c3DM8niyeuoNdS-T3PTqHOcg4y6hMigq/view?usp=sharing)
+[![Project Showcase](https://github.com/Yehdar/Canadian-Credit-Card-Points-Optimizer/blob/master/demo/thumbnail.png)](https://drive.google.com/file/d/1c3DM8niyeuoNdS-T3PTqHOcg4y6hMigq/view?usp=sharing)
 
 > *Click the image above to view the full walkthrough of the AI-driven card optimizer.*
 

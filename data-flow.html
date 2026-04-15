@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Canadian Credit Card Points Optimizer — Data Flow</title>
+<style>
+  body { margin: 0; background: #F3F4F6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1760 2320" width="1760" height="2320">
+<defs>
+  <!-- solid arrows -->
+  <marker id="a-dark" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#1F2937"/></marker>
+  <marker id="a-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#2563EB"/></marker>
+  <marker id="a-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#059669"/></marker>
+  <marker id="a-purple" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#7C3AED"/></marker>
+  <marker id="a-orange" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#D97706"/></marker>
+  <marker id="a-red" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#DC2626"/></marker>
+  <!-- return (left-pointing) arrows -->
+  <marker id="r-blue" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto"><path d="M8,0 L8,6 L0,3z" fill="#2563EB"/></marker>
+  <marker id="r-green" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto"><path d="M8,0 L8,6 L0,3z" fill="#059669"/></marker>
+  <marker id="r-purple" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto"><path d="M8,0 L8,6 L0,3z" fill="#7C3AED"/></marker>
+  <marker id="r-orange" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto"><path d="M8,0 L8,6 L0,3z" fill="#D97706"/></marker>
+  <marker id="r-dark" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto"><path d="M8,0 L8,6 L0,3z" fill="#1F2937"/></marker>
+</defs>
+
+<!-- ═══════════════════════════════════════════
+     PAGE TITLE
+═══════════════════════════════════════════ -->
+<rect width="1760" height="2320" fill="#F3F4F6"/>
+<text x="880" y="38" text-anchor="middle" font-size="20" font-weight="800" fill="#111827">Canadian Credit Card Points Optimizer — Data Flow Diagrams</text>
+<text x="880" y="58" text-anchor="middle" font-size="11" fill="#6B7280">5 key user journeys shown as sequence diagrams · time flows downward</text>
+
+<!-- ═══════════════════════════════════════════
+     SWIM LANE HEADERS (reused across all flows)
+     Columns: User=100  ChatPanel=280  useChat=460  api.ts=640  Ktor=820  Service=1020  External=1220  DB=1420
+═══════════════════════════════════════════ -->
+
+<!-- ─────────────────────────────────────────
+     FLOW 1: CHAT EXTRACT
+     y: 80 → 490
+───────────────────────────────────────── -->
+<!-- Flow box -->
+<rect x="20" y="75" width="1720" height="420" rx="10" fill="#EFF6FF" stroke="#3B82F6" stroke-width="2"/>
+<rect x="20" y="75" width="1720" height="32" rx="10" fill="#3B82F6"/>
+<text x="880" y="96" text-anchor="middle" font-size="13" font-weight="700" fill="white">FLOW 1 — Chat Extract: User types spending message → LiveProfileSidebar updates</text>
+
+<!-- Column headers -->
+<text x="100"  y="125" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">USER</text>
+<text x="280"  y="125" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">ChatPanel.tsx</text>
+<text x="460"  y="125" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">useChat.ts</text>
+<text x="640"  y="125" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">lib/api.ts</text>
+<text x="820"  y="125" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">Ktor /api/chat</text>
+<text x="1020" y="125" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">GeminiService.kt</text>
+<text x="1220" y="125" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">Gemini 2.5 Flash</text>
+<text x="1500" y="125" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">LiveProfileSidebar</text>
+
+<!-- Lifelines -->
+<line x1="100"  y1="130" x2="100"  y2="490" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="280"  y1="130" x2="280"  y2="490" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="460"  y1="130" x2="460"  y2="490" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="640"  y1="130" x2="640"  y2="490" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="820"  y1="130" x2="820"  y2="490" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="1020" y1="130" x2="1020" y2="490" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="1220" y1="130" x2="1220" y2="490" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="1500" y1="130" x2="1500" y2="490" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+
+<!-- Step 1: User types -->
+<line x1="100" y1="155" x2="272" y2="155" stroke="#2563EB" stroke-width="1.5" marker-end="url(#a-blue)"/>
+<rect x="110" y="143" width="152" height="14" rx="3" fill="#DBEAFE"/>
+<text x="186" y="153" text-anchor="middle" font-size="8" fill="#1D4ED8" font-weight="600">type message in input field</text>
+<text x="100" y="168" font-size="7.5" fill="#6B7280">①</text>
+
+<!-- Step 2: onSendMessage -->
+<line x1="280" y1="180" x2="452" y2="180" stroke="#2563EB" stroke-width="1.5" marker-end="url(#a-blue)"/>
+<rect x="284" y="168" width="164" height="14" rx="3" fill="#DBEAFE"/>
+<text x="366" y="178" text-anchor="middle" font-size="8" fill="#1D4ED8" font-weight="600">onSendMessage(text: string)</text>
+<text x="280" y="193" font-size="7.5" fill="#6B7280">②</text>
+
+<!-- Step 3: useChat appends user message -->
+<rect x="430" y="192" width="60" height="14" rx="3" fill="#BFDBFE"/>
+<text x="460" y="202" text-anchor="middle" font-size="7.5" fill="#1E40AF">push user msg</text>
+<text x="460" y="215" font-size="7.5" fill="#6B7280" text-anchor="middle">③</text>
+
+<!-- Step 4: sendOptimizeRequest -->
+<line x1="460" y1="225" x2="632" y2="225" stroke="#2563EB" stroke-width="1.5" marker-end="url(#a-blue)"/>
+<rect x="464" y="213" width="164" height="14" rx="3" fill="#DBEAFE"/>
+<text x="546" y="223" text-anchor="middle" font-size="8" fill="#1D4ED8" font-weight="600">sendOptimizeRequest(OptimizeRequest)</text>
+<text x="460" y="238" font-size="7.5" fill="#6B7280" text-anchor="middle">④</text>
+
+<!-- Step 5: POST /api/chat -->
+<line x1="640" y1="250" x2="812" y2="250" stroke="#2563EB" stroke-width="1.5" marker-end="url(#a-blue)"/>
+<rect x="644" y="238" width="164" height="14" rx="3" fill="#DBEAFE"/>
+<text x="726" y="248" text-anchor="middle" font-size="8" fill="#1D4ED8" font-weight="600">POST /api/chat  strategy="extract"</text>
+<text x="640" y="263" font-size="7.5" fill="#6B7280" text-anchor="middle">⑤</text>
+
+<!-- Step 6: geminiService.optimize -->
+<line x1="820" y1="275" x2="992" y2="275" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#a-purple)"/>
+<rect x="824" y="263" width="164" height="14" rx="3" fill="#DDD6FE"/>
+<text x="906" y="273" text-anchor="middle" font-size="8" fill="#4C1D95" font-weight="600">geminiService.optimize(req)</text>
+<text x="820" y="288" font-size="7.5" fill="#6B7280" text-anchor="middle">⑥</text>
+
+<!-- Step 7: build EXTRACT prompt + POST to Gemini -->
+<line x1="1020" y1="300" x2="1192" y2="300" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#a-purple)"/>
+<rect x="1024" y="288" width="164" height="14" rx="3" fill="#DDD6FE"/>
+<text x="1106" y="298" text-anchor="middle" font-size="8" fill="#4C1D95" font-weight="600">POST generateContent (EXTRACT_SYSTEM_PROMPT)</text>
+
+<!-- Step 8: Gemini returns extracted_data -->
+<line x1="1220" y1="318" x2="1028" y2="318" stroke="#7C3AED" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-purple)"/>
+<rect x="1028" y="306" width="190" height="14" rx="3" fill="#EDE9FE"/>
+<text x="1123" y="316" text-anchor="middle" font-size="8" fill="#4C1D95">&lt;extracted_data&gt; JSON + reply text</text>
+<text x="1220" y="331" font-size="7.5" fill="#6B7280" text-anchor="middle">⑧</text>
+
+<!-- Step 9: ChatResponse to Ktor -->
+<line x1="1020" y1="343" x2="828" y2="343" stroke="#7C3AED" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-purple)"/>
+<rect x="828" y="331" width="190" height="14" rx="3" fill="#EDE9FE"/>
+<text x="923" y="341" text-anchor="middle" font-size="8" fill="#4C1D95">ChatResponse { message, isDone:true }</text>
+
+<!-- Step 10: JSON to api.ts -->
+<line x1="820" y1="365" x2="648" y2="365" stroke="#2563EB" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-blue)"/>
+<rect x="648" y="353" width="170" height="14" rx="3" fill="#DBEAFE"/>
+<text x="733" y="363" text-anchor="middle" font-size="8" fill="#1D4ED8">JSON { message: string, isDone: boolean }</text>
+
+<!-- Step 11: parse extracted_data tag -->
+<rect x="430" y="375" width="60" height="28" rx="3" fill="#BFDBFE"/>
+<text x="460" y="387" text-anchor="middle" font-size="7.5" fill="#1E40AF">extractTag(</text>
+<text x="460" y="398" text-anchor="middle" font-size="7.5" fill="#1E40AF">"extracted_data")</text>
+
+<!-- Step 12: ChatResponse to useChat -->
+<line x1="640" y1="380" x2="468" y2="380" stroke="#2563EB" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-blue)"/>
+<rect x="464" y="368" width="172" height="14" rx="3" fill="#DBEAFE"/>
+<text x="550" y="378" text-anchor="middle" font-size="8" fill="#1D4ED8">ChatResponse → parse &lt;extracted_data&gt;</text>
+
+<!-- Step 13: setExtractedData -->
+<line x1="460" y1="410" x2="1492" y2="410" stroke="#059669" stroke-width="1.5" marker-end="url(#a-green)"/>
+<rect x="700" y="398" width="200" height="14" rx="3" fill="#D1FAE5"/>
+<text x="800" y="408" text-anchor="middle" font-size="8" fill="#065F46" font-weight="600">setExtractedData(parsed) → LiveProfileSidebar re-renders</text>
+<text x="460" y="423" font-size="7.5" fill="#6B7280" text-anchor="middle">⑬</text>
+
+<!-- Step 14: update messages -->
+<line x1="460" y1="438" x2="288" y2="438" stroke="#2563EB" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-blue)"/>
+<rect x="288" y="426" width="170" height="14" rx="3" fill="#DBEAFE"/>
+<text x="373" y="436" text-anchor="middle" font-size="8" fill="#1D4ED8">messages updated → model reply renders</text>
+
+<!-- Step 15: isLoading = false -->
+<line x1="460" y1="458" x2="288" y2="458" stroke="#2563EB" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-blue)"/>
+<rect x="288" y="446" width="170" height="14" rx="3" fill="#DBEAFE"/>
+<text x="373" y="456" text-anchor="middle" font-size="8" fill="#1D4ED8">isLoading=false · input re-enabled</text>
+
+<!-- ─────────────────────────────────────────
+     FLOW 2: GET CARDS (ARSENAL)
+     y: 510 → 940
+───────────────────────────────────────── -->
+<rect x="20" y="505" width="1720" height="440" rx="10" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<rect x="20" y="505" width="1720" height="32" rx="10" fill="#7C3AED"/>
+<text x="880" y="526" text-anchor="middle" font-size="13" font-weight="700" fill="white">FLOW 2 — Get Cards: "Get Cards Now" clicked → Gemini recommends → ArsenalModal opens</text>
+
+<!-- Column headers -->
+<text x="100"  y="555" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">USER</text>
+<text x="280"  y="555" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">page.tsx</text>
+<text x="460"  y="555" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">useChat.ts</text>
+<text x="640"  y="555" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">lib/api.ts</text>
+<text x="820"  y="555" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">Ktor /api/chat</text>
+<text x="1020" y="555" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">GeminiService.kt</text>
+<text x="1220" y="555" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">Gemini 2.5 Flash</text>
+<text x="1500" y="555" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">ArsenalModal</text>
+
+<!-- Lifelines -->
+<line x1="100"  y1="560" x2="100"  y2="940" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="280"  y1="560" x2="280"  y2="940" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="460"  y1="560" x2="460"  y2="940" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="640"  y1="560" x2="640"  y2="940" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="820"  y1="560" x2="820"  y2="940" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="1020" y1="560" x2="1020" y2="940" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="1220" y1="560" x2="1220" y2="940" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="1500" y1="560" x2="1500" y2="940" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+
+<!-- Step 1 -->
+<line x1="100" y1="585" x2="272" y2="585" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#a-purple)"/>
+<rect x="104" y="573" width="164" height="14" rx="3" fill="#EDE9FE"/>
+<text x="186" y="583" text-anchor="middle" font-size="8" fill="#4C1D95" font-weight="600">click "Get Cards Now"</text>
+<text x="100" y="598" font-size="7.5" fill="#6B7280">①</text>
+
+<!-- Step 2: onGetCards -->
+<line x1="280" y1="608" x2="452" y2="608" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#a-purple)"/>
+<rect x="284" y="596" width="164" height="14" rx="3" fill="#EDE9FE"/>
+<text x="366" y="606" text-anchor="middle" font-size="8" fill="#4C1D95" font-weight="600">onGetCards() → useChat.getCards()</text>
+
+<!-- Step 3: build request -->
+<rect x="400" y="620" width="120" height="42" rx="3" fill="#DDD6FE"/>
+<text x="460" y="633" text-anchor="middle" font-size="7.5" fill="#4C1D95" font-weight="600">build OptimizeRequest</text>
+<text x="460" y="646" text-anchor="middle" font-size="7" fill="#4C1D95">toSpendingBreakdown()</text>
+<text x="460" y="658" text-anchor="middle" font-size="7" fill="#4C1D95">toFormFilters() · detect strategy</text>
+<text x="460" y="672" font-size="7.5" fill="#6B7280" text-anchor="middle">③</text>
+
+<!-- Step 4: sendOptimizeRequest -->
+<line x1="460" y1="680" x2="632" y2="680" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#a-purple)"/>
+<rect x="464" y="668" width="164" height="14" rx="3" fill="#EDE9FE"/>
+<text x="546" y="678" text-anchor="middle" font-size="8" fill="#4C1D95" font-weight="600">sendOptimizeRequest(OptimizeRequest)</text>
+
+<!-- Step 5 -->
+<line x1="640" y1="700" x2="812" y2="700" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#a-purple)"/>
+<rect x="644" y="688" width="164" height="14" rx="3" fill="#EDE9FE"/>
+<text x="726" y="698" text-anchor="middle" font-size="8" fill="#4C1D95" font-weight="600">POST /api/chat  strategy="arsenal"</text>
+
+<!-- Step 6 -->
+<line x1="820" y1="720" x2="992" y2="720" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#a-purple)"/>
+<rect x="824" y="708" width="164" height="14" rx="3" fill="#DDD6FE"/>
+<text x="906" y="718" text-anchor="middle" font-size="8" fill="#4C1D95" font-weight="600">geminiService.optimize(req)</text>
+
+<!-- Step 7: build arsenal prompt -->
+<rect x="960" y="730" width="120" height="28" rx="3" fill="#C4B5FD"/>
+<text x="1020" y="742" text-anchor="middle" font-size="7.5" fill="#4C1D95" font-weight="600">SYSTEM_PROMPT</text>
+<text x="1020" y="754" text-anchor="middle" font-size="7" fill="#4C1D95">52-card catalog + rules</text>
+
+<!-- Step 8 -->
+<line x1="1020" y1="768" x2="1192" y2="768" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#a-purple)"/>
+<rect x="1024" y="756" width="164" height="14" rx="3" fill="#DDD6FE"/>
+<text x="1106" y="766" text-anchor="middle" font-size="8" fill="#4C1D95" font-weight="600">POST generateContent (thinkingBudget=0)</text>
+
+<!-- What Gemini returns note -->
+<rect x="1228" y="775" width="200" height="56" rx="4" fill="#F5F3FF" stroke="#7C3AED" stroke-width="1"/>
+<text x="1238" y="789" font-size="7.5" fill="#4C1D95" font-weight="700">Gemini returns:</text>
+<text x="1238" y="801" font-size="7" fill="#4C1D95">&lt;recommendation_data&gt;[</text>
+<text x="1238" y="813" font-size="7" fill="#4C1D95">  { name, annualFee, breakdown[],</text>
+<text x="1238" y="825" font-size="7" fill="#4C1D95">    netAnnualValue, visualConfig }</text>
+
+<!-- Step 9: Gemini response -->
+<line x1="1220" y1="838" x2="1028" y2="838" stroke="#7C3AED" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-purple)"/>
+<rect x="1028" y="826" width="190" height="14" rx="3" fill="#EDE9FE"/>
+<text x="1123" y="836" text-anchor="middle" font-size="8" fill="#4C1D95">&lt;recommendation_data&gt; JSON array</text>
+
+<!-- Step 10: ChatResponse -->
+<line x1="1020" y1="858" x2="828" y2="858" stroke="#7C3AED" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-purple)"/>
+<rect x="828" y="846" width="190" height="14" rx="3" fill="#EDE9FE"/>
+<text x="923" y="856" text-anchor="middle" font-size="8" fill="#4C1D95">ChatResponse { message, isDone:true }</text>
+
+<!-- Step 11: parse recommendation_data -->
+<line x1="820" y1="878" x2="648" y2="878" stroke="#7C3AED" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-purple)"/>
+<rect x="400" y="878" width="120" height="42" rx="3" fill="#DDD6FE"/>
+<text x="460" y="891" text-anchor="middle" font-size="7.5" fill="#4C1D95" font-weight="600">parseGeminiCards()</text>
+<text x="460" y="904" text-anchor="middle" font-size="7" fill="#4C1D95">results: RecommendationResult[]</text>
+<text x="460" y="916" text-anchor="middle" font-size="7" fill="#4C1D95">arsenalCards: ArsenalCard[]</text>
+
+<!-- Step 12: setResults, isDone=true -->
+<line x1="460" y1="918" x2="272" y2="918" stroke="#7C3AED" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-purple)"/>
+<rect x="272" y="906" width="185" height="14" rx="3" fill="#EDE9FE"/>
+<text x="364" y="916" text-anchor="middle" font-size="8" fill="#4C1D95">setResults · setArsenalCards · isDone=true</text>
+
+<!-- Step 13: useEffect opens Arsenal -->
+<line x1="280" y1="932" x2="1492" y2="932" stroke="#059669" stroke-width="1.5" marker-end="url(#a-green)"/>
+<rect x="700" y="920" width="280" height="14" rx="3" fill="#D1FAE5"/>
+<text x="840" y="930" text-anchor="middle" font-size="8" fill="#065F46" font-weight="600">useEffect[results, isDone] → preload ThreeDCard → setArsenalOpen(true)</text>
+
+<!-- ─────────────────────────────────────────
+     FLOW 3: AUTH + PROFILE LOAD
+     y: 960 → 1310
+───────────────────────────────────────── -->
+<rect x="20" y="955" width="1720" height="370" rx="10" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+<rect x="20" y="955" width="1720" height="32" rx="10" fill="#059669"/>
+<text x="880" y="976" text-anchor="middle" font-size="13" font-weight="700" fill="white">FLOW 3 — Auth + Profile Load: User signs in → JWT validated → profiles fetched</text>
+
+<!-- Column headers -->
+<text x="100"  y="1005" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">USER</text>
+<text x="280"  y="1005" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">AuthButtons / SplashScreen</text>
+<text x="460"  y="1005" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">proxy.ts / Auth0</text>
+<text x="640"  y="1005" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">ProfileContext</text>
+<text x="820"  y="1005" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">lib/api.ts</text>
+<text x="1020" y="1005" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">Ktor /api/profiles</text>
+<text x="1220" y="1005" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">Auth.kt (JWKS)</text>
+<text x="1450" y="1005" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">ProfileService / DB</text>
+
+<line x1="100"  y1="1010" x2="100"  y2="1320" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="280"  y1="1010" x2="280"  y2="1320" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="460"  y1="1010" x2="460"  y2="1320" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="640"  y1="1010" x2="640"  y2="1320" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="820"  y1="1010" x2="820"  y2="1320" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="1020" y1="1010" x2="1020" y2="1320" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="1220" y1="1010" x2="1220" y2="1320" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="1450" y1="1010" x2="1450" y2="1320" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+
+<!-- Step 1: click Sign In -->
+<line x1="100" y1="1030" x2="272" y2="1030" stroke="#059669" stroke-width="1.5" marker-end="url(#a-green)"/>
+<rect x="104" y="1018" width="164" height="14" rx="3" fill="#D1FAE5"/>
+<text x="186" y="1028" text-anchor="middle" font-size="8" fill="#065F46" font-weight="600">click "Sign In" → /auth/login</text>
+
+<!-- Step 2: Auth0 redirect + callback -->
+<line x1="280" y1="1050" x2="452" y2="1050" stroke="#059669" stroke-width="1.5" marker-end="url(#a-green)"/>
+<rect x="284" y="1038" width="164" height="14" rx="3" fill="#D1FAE5"/>
+<text x="366" y="1048" text-anchor="middle" font-size="8" fill="#065F46" font-weight="600">Auth0 login redirect → callback</text>
+
+<!-- Step 3: session cookie set -->
+<rect x="410" y="1062" width="100" height="28" rx="3" fill="#A7F3D0"/>
+<text x="460" y="1074" text-anchor="middle" font-size="7.5" fill="#065F46" font-weight="600">session cookie set</text>
+<text x="460" y="1086" text-anchor="middle" font-size="7" fill="#065F46">useUser() returns user</text>
+
+<!-- Step 4: splash dismiss -->
+<line x1="460" y1="1096" x2="108" y2="1096" stroke="#059669" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-green)"/>
+<rect x="110" y="1084" width="146" height="14" rx="3" fill="#D1FAE5"/>
+<text x="183" y="1094" text-anchor="middle" font-size="8" fill="#065F46">useEffect[user] → setShowSplash(false)</text>
+
+<!-- Step 5: ProfileContext effect fires -->
+<line x1="460" y1="1116" x2="632" y2="1116" stroke="#059669" stroke-width="1.5" marker-end="url(#a-green)"/>
+<rect x="464" y="1104" width="164" height="14" rx="3" fill="#D1FAE5"/>
+<text x="546" y="1114" text-anchor="middle" font-size="8" fill="#065F46" font-weight="600">useEffect[user] fires → fetchProfiles()</text>
+
+<!-- Step 6: authHeader() call -->
+<line x1="640" y1="1136" x2="812" y2="1136" stroke="#059669" stroke-width="1.5" marker-end="url(#a-green)"/>
+<rect x="644" y="1124" width="164" height="14" rx="3" fill="#D1FAE5"/>
+<text x="726" y="1134" text-anchor="middle" font-size="8" fill="#065F46" font-weight="600">authHeader() → GET /auth/access-token</text>
+
+<!-- Step 7: Bearer token -->
+<line x1="820" y1="1156" x2="648" y2="1156" stroke="#059669" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-green)"/>
+<rect x="648" y="1144" width="170" height="14" rx="3" fill="#D1FAE5"/>
+<text x="733" y="1154" text-anchor="middle" font-size="8" fill="#065F46">{ token } → Authorization: Bearer JWT</text>
+
+<!-- Step 8: GET /api/profiles -->
+<line x1="820" y1="1176" x2="1012" y2="1176" stroke="#059669" stroke-width="1.5" marker-end="url(#a-green)"/>
+<rect x="824" y="1164" width="184" height="14" rx="3" fill="#D1FAE5"/>
+<text x="916" y="1174" text-anchor="middle" font-size="8" fill="#065F46" font-weight="600">GET /api/profiles  Authorization: Bearer JWT</text>
+
+<!-- Step 9: JWT validation -->
+<line x1="1020" y1="1196" x2="1192" y2="1196" stroke="#059669" stroke-width="1.5" marker-end="url(#a-green)"/>
+<rect x="1024" y="1184" width="164" height="14" rx="3" fill="#D1FAE5"/>
+<text x="1106" y="1194" text-anchor="middle" font-size="8" fill="#065F46" font-weight="600">Auth.kt: verify JWT via JWKS</text>
+
+<!-- Step 10: JWTPrincipal.subject = userId -->
+<line x1="1220" y1="1216" x2="1028" y2="1216" stroke="#059669" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-green)"/>
+<rect x="1028" y="1204" width="190" height="14" rx="3" fill="#D1FAE5"/>
+<text x="1123" y="1214" text-anchor="middle" font-size="8" fill="#065F46">JWTPrincipal.subject → userId (Auth0 sub)</text>
+
+<!-- Step 11: profileService.getAllProfiles -->
+<line x1="1020" y1="1236" x2="1442" y2="1236" stroke="#059669" stroke-width="1.5" marker-end="url(#a-green)"/>
+<rect x="1200" y="1224" width="240" height="14" rx="3" fill="#D1FAE5"/>
+<text x="1320" y="1234" text-anchor="middle" font-size="8" fill="#065F46" font-weight="600">SELECT * WHERE user_id=userId ORDER BY created_at DESC</text>
+
+<!-- Step 12: profiles returned -->
+<line x1="1450" y1="1256" x2="1028" y2="1256" stroke="#059669" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-green)"/>
+<rect x="1030" y="1244" width="200" height="14" rx="3" fill="#D1FAE5"/>
+<text x="1130" y="1254" text-anchor="middle" font-size="8" fill="#065F46">List&lt;ProfileResponse&gt; (id, name, spending, savedCards)</text>
+
+<!-- Step 13: profiles → context -->
+<line x1="1020" y1="1276" x2="648" y2="1276" stroke="#059669" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-green)"/>
+<rect x="648" y="1264" width="370" height="14" rx="3" fill="#D1FAE5"/>
+<text x="833" y="1274" text-anchor="middle" font-size="8" fill="#065F46">setProfiles(data) · setActiveProfile(data[0]) · ProfileSwitcher renders</text>
+
+<!-- ─────────────────────────────────────────
+     FLOW 4: SAVE CARDS TO PROFILE
+     y: 1330 → 1640
+───────────────────────────────────────── -->
+<rect x="20" y="1325" width="1720" height="330" rx="10" fill="#FEF3C7" stroke="#D97706" stroke-width="2"/>
+<rect x="20" y="1325" width="1720" height="32" rx="10" fill="#D97706"/>
+<text x="880" y="1346" text-anchor="middle" font-size="13" font-weight="700" fill="white">FLOW 4 — Save Cards: User saves arsenal to profile → persisted in DB</text>
+
+<!-- Column headers -->
+<text x="100"  y="1375" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">USER</text>
+<text x="280"  y="1375" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">ArsenalModal</text>
+<text x="460"  y="1375" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">page.tsx</text>
+<text x="640"  y="1375" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">ProfileContext</text>
+<text x="820"  y="1375" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">lib/api.ts</text>
+<text x="1020" y="1375" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">Ktor /api/profiles/{id}</text>
+<text x="1220" y="1375" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">ProfileService.kt</text>
+<text x="1450" y="1375" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">PostgreSQL</text>
+
+<line x1="100"  y1="1380" x2="100"  y2="1650" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="280"  y1="1380" x2="280"  y2="1650" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="460"  y1="1380" x2="460"  y2="1650" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="640"  y1="1380" x2="640"  y2="1650" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="820"  y1="1380" x2="820"  y2="1650" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="1020" y1="1380" x2="1020" y2="1650" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="1220" y1="1380" x2="1220" y2="1650" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="1450" y1="1380" x2="1450" y2="1650" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+
+<!-- Step 1 -->
+<line x1="100" y1="1400" x2="272" y2="1400" stroke="#D97706" stroke-width="1.5" marker-end="url(#a-orange)"/>
+<rect x="104" y="1388" width="164" height="14" rx="3" fill="#FEF3C7"/>
+<text x="186" y="1398" text-anchor="middle" font-size="8" fill="#92400E" font-weight="600">click "Save Cards" (visible if auth + activeProfile)</text>
+
+<!-- Step 2: onSaveCards callback -->
+<line x1="280" y1="1420" x2="452" y2="1420" stroke="#D97706" stroke-width="1.5" marker-end="url(#a-orange)"/>
+<rect x="284" y="1408" width="164" height="14" rx="3" fill="#FEF3C7"/>
+<text x="366" y="1418" text-anchor="middle" font-size="8" fill="#92400E" font-weight="600">onSaveCards() → handleSaveCards()</text>
+
+<!-- Step 3: build SavedCard[] -->
+<rect x="400" y="1432" width="120" height="42" rx="3" fill="#FDE68A"/>
+<text x="460" y="1444" text-anchor="middle" font-size="7.5" fill="#92400E" font-weight="600">build SavedCard[]</text>
+<text x="460" y="1457" text-anchor="middle" font-size="7" fill="#92400E">activeResults + arsenalCards</text>
+<text x="460" y="1469" text-anchor="middle" font-size="7" fill="#92400E">merge: purpose · description · visualConfig</text>
+
+<!-- Step 4: saveCardsToProfile -->
+<line x1="460" y1="1480" x2="632" y2="1480" stroke="#D97706" stroke-width="1.5" marker-end="url(#a-orange)"/>
+<rect x="464" y="1468" width="164" height="14" rx="3" fill="#FEF3C7"/>
+<text x="546" y="1478" text-anchor="middle" font-size="8" fill="#92400E" font-weight="600">saveCardsToProfile(cards, snapshot, spending)</text>
+
+<!-- Step 5: apiUpdate -->
+<line x1="640" y1="1500" x2="812" y2="1500" stroke="#D97706" stroke-width="1.5" marker-end="url(#a-orange)"/>
+<rect x="644" y="1488" width="164" height="14" rx="3" fill="#FEF3C7"/>
+<text x="726" y="1498" text-anchor="middle" font-size="8" fill="#92400E" font-weight="600">apiUpdate(id, { savedCards, extractedSnapshot, spending })</text>
+
+<!-- Step 6: PUT /api/profiles/{id} -->
+<line x1="820" y1="1520" x2="1012" y2="1520" stroke="#D97706" stroke-width="1.5" marker-end="url(#a-orange)"/>
+<rect x="824" y="1508" width="184" height="14" rx="3" fill="#FEF3C7"/>
+<text x="916" y="1518" text-anchor="middle" font-size="8" fill="#92400E" font-weight="600">PUT /api/profiles/{id}  Bearer JWT</text>
+
+<!-- Step 7: verify ownership -->
+<line x1="1020" y1="1540" x2="1192" y2="1540" stroke="#D97706" stroke-width="1.5" marker-end="url(#a-orange)"/>
+<rect x="1024" y="1528" width="164" height="14" rx="3" fill="#FEF3C7"/>
+<text x="1106" y="1538" text-anchor="middle" font-size="8" fill="#92400E" font-weight="600">updateProfile(id, req, userId)</text>
+
+<!-- Step 8: UPDATE query -->
+<line x1="1220" y1="1560" x2="1442" y2="1560" stroke="#D97706" stroke-width="1.5" marker-end="url(#a-orange)"/>
+<rect x="1224" y="1548" width="215" height="14" rx="3" fill="#FEF3C7"/>
+<text x="1331" y="1558" text-anchor="middle" font-size="8" fill="#92400E" font-weight="600">UPDATE spending_profiles SET saved_cards_json, extracted_snapshot_json WHERE id AND user_id</text>
+
+<!-- Step 9: DB trigger -->
+<rect x="1400" y="1572" width="100" height="14" rx="3" fill="#FDE68A"/>
+<text x="1450" y="1582" text-anchor="middle" font-size="7.5" fill="#92400E">trigger: updated_at = NOW()</text>
+
+<!-- Step 10: ProfileResponse back -->
+<line x1="1450" y1="1596" x2="1228" y2="1596" stroke="#D97706" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-orange)"/>
+<line x1="1220" y1="1596" x2="1028" y2="1596" stroke="#D97706" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-orange)"/>
+<rect x="1028" y="1584" width="190" height="14" rx="3" fill="#FEF3C7"/>
+<text x="1123" y="1594" text-anchor="middle" font-size="8" fill="#92400E">ProfileResponse (updated savedCards)</text>
+
+<!-- Step 11: context + UI update -->
+<line x1="1020" y1="1616" x2="648" y2="1616" stroke="#D97706" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-orange)"/>
+<rect x="648" y="1604" width="370" height="14" rx="3" fill="#FEF3C7"/>
+<text x="833" y="1614" text-anchor="middle" font-size="8" fill="#92400E">setProfiles(updated) · setActiveProfile(updated) · toast "Saved!"</text>
+
+<!-- ─────────────────────────────────────────
+     FLOW 5: RE-SYNC SAVED CARD
+     y: 1660 → 2000
+───────────────────────────────────────── -->
+<rect x="20" y="1655" width="1720" height="360" rx="10" fill="#FFF1F2" stroke="#DC2626" stroke-width="2"/>
+<rect x="20" y="1655" width="1720" height="32" rx="10" fill="#DC2626"/>
+<text x="880" y="1676" text-anchor="middle" font-size="13" font-weight="700" fill="white">FLOW 5 — Re-sync Saved Card: Re-run Gemini on a previously saved card using stored context</text>
+
+<!-- Column headers -->
+<text x="100"  y="1705" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">USER</text>
+<text x="280"  y="1705" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">SavedCatalog</text>
+<text x="460"  y="1705" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">page.tsx</text>
+<text x="640"  y="1705" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">useChat.ts</text>
+<text x="820"  y="1705" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">lib/api.ts</text>
+<text x="1020" y="1705" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">Ktor /api/chat</text>
+<text x="1220" y="1705" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">GeminiService.kt</text>
+<text x="1450" y="1705" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">ArsenalModal</text>
+
+<line x1="100"  y1="1710" x2="100"  y2="2010" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="280"  y1="1710" x2="280"  y2="2010" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="460"  y1="1710" x2="460"  y2="2010" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="640"  y1="1710" x2="640"  y2="2010" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="820"  y1="1710" x2="820"  y2="2010" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="1020" y1="1710" x2="1020" y2="2010" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="1220" y1="1710" x2="1220" y2="2010" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="1450" y1="1710" x2="1450" y2="2010" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+
+<!-- Step 1 -->
+<line x1="100" y1="1730" x2="272" y2="1730" stroke="#DC2626" stroke-width="1.5" marker-end="url(#a-red)"/>
+<rect x="104" y="1718" width="164" height="14" rx="3" fill="#FEE2E2"/>
+<text x="186" y="1728" text-anchor="middle" font-size="8" fill="#991B1B" font-weight="600">click "Re-sync" on saved card tile</text>
+
+<!-- Step 2 -->
+<line x1="280" y1="1750" x2="452" y2="1750" stroke="#DC2626" stroke-width="1.5" marker-end="url(#a-red)"/>
+<rect x="284" y="1738" width="164" height="14" rx="3" fill="#FEE2E2"/>
+<text x="366" y="1748" text-anchor="middle" font-size="8" fill="#991B1B" font-weight="600">onReSyncCard(card) → handleReSyncCard(card)</text>
+
+<!-- Step 3: reSyncCard -->
+<line x1="460" y1="1770" x2="632" y2="1770" stroke="#DC2626" stroke-width="1.5" marker-end="url(#a-red)"/>
+<rect x="464" y="1758" width="164" height="14" rx="3" fill="#FEE2E2"/>
+<text x="546" y="1768" text-anchor="middle" font-size="8" fill="#991B1B" font-weight="600">reSyncCard(card, activeProfile.extractedSnapshot)</text>
+
+<!-- Step 4: decide context source -->
+<rect x="580" y="1782" width="120" height="42" rx="3" fill="#FECACA"/>
+<text x="640" y="1795" text-anchor="middle" font-size="7.5" fill="#991B1B" font-weight="600">snapshot exists?</text>
+<text x="640" y="1808" text-anchor="middle" font-size="7" fill="#991B1B">YES → use extractedSnapshot</text>
+<text x="640" y="1820" text-anchor="middle" font-size="7" fill="#991B1B">NO → reconstruct from card.breakdown ÷12</text>
+
+<!-- Step 5: reset messages -->
+<rect x="580" y="1832" width="120" height="28" rx="3" fill="#FEE2E2"/>
+<text x="640" y="1844" text-anchor="middle" font-size="7.5" fill="#991B1B">reset messages to</text>
+<text x="640" y="1856" text-anchor="middle" font-size="7" fill="#991B1B">[GREETING, contextMsg]</text>
+
+<!-- Step 6: getCards() -->
+<line x1="640" y1="1868" x2="812" y2="1868" stroke="#DC2626" stroke-width="1.5" marker-end="url(#a-red)"/>
+<rect x="644" y="1856" width="164" height="14" rx="3" fill="#FEE2E2"/>
+<text x="726" y="1866" text-anchor="middle" font-size="8" fill="#991B1B" font-weight="600">POST /api/chat  strategy="arsenal"</text>
+
+<!-- Step 7 -->
+<line x1="820" y1="1888" x2="1012" y2="1888" stroke="#DC2626" stroke-width="1.5" marker-end="url(#a-red)"/>
+<rect x="824" y="1876" width="184" height="14" rx="3" fill="#FEE2E2"/>
+<text x="916" y="1886" text-anchor="middle" font-size="8" fill="#991B1B" font-weight="600">geminiService.optimize(req)</text>
+
+<!-- Step 8 -->
+<line x1="1020" y1="1908" x2="1192" y2="1908" stroke="#DC2626" stroke-width="1.5" marker-end="url(#a-red)"/>
+<rect x="1024" y="1896" width="164" height="14" rx="3" fill="#FEE2E2"/>
+<text x="1106" y="1906" text-anchor="middle" font-size="8" fill="#991B1B" font-weight="600">POST generateContent (SYSTEM_PROMPT)</text>
+
+<!-- Step 9: response -->
+<line x1="1220" y1="1928" x2="1028" y2="1928" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-dark)"/>
+<rect x="1028" y="1916" width="190" height="14" rx="3" fill="#FEE2E2"/>
+<text x="1123" y="1926" text-anchor="middle" font-size="8" fill="#991B1B">&lt;recommendation_data&gt; for that card</text>
+
+<!-- Step 10: parse + set results -->
+<line x1="1020" y1="1948" x2="648" y2="1948" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-dark)"/>
+<rect x="648" y="1936" width="370" height="14" rx="3" fill="#FEE2E2"/>
+<text x="833" y="1946" text-anchor="middle" font-size="8" fill="#991B1B">parseGeminiCards() → setResults · setArsenalCards · isDone=true</text>
+
+<!-- Step 11: open Arsenal -->
+<line x1="640" y1="1968" x2="468" y2="1968" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-dark)"/>
+<line x1="460" y1="1968" x2="288" y2="1968" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#r-dark)"/>
+<rect x="284" y="1956" width="180" height="14" rx="3" fill="#FEE2E2"/>
+<text x="374" y="1966" text-anchor="middle" font-size="8" fill="#991B1B">setSavedCatalogOpen(false) · setArsenalOpen(true)</text>
+
+<!-- Step 12: ArsenalModal shows re-synced card -->
+<line x1="280" y1="1988" x2="1442" y2="1988" stroke="#DC2626" stroke-width="1.5" marker-end="url(#a-red)"/>
+<rect x="700" y="1976" width="290" height="14" rx="3" fill="#FEE2E2"/>
+<text x="845" y="1986" text-anchor="middle" font-size="8" fill="#991B1B" font-weight="600">ArsenalModal opens with refreshed recommendation + back button → SavedCatalog</text>
+
+<!-- ═══════════════════════════════════════════
+     LEGEND
+═══════════════════════════════════════════ -->
+<rect x="20" y="2025" width="1720" height="60" rx="8" fill="white" opacity="0.8"/>
+<text x="880" y="2043" text-anchor="middle" font-size="10" font-weight="700" fill="#374151">KEY DATA STRUCTURES PASSED</text>
+<text x="40"  y="2060" font-size="8" fill="#1D4ED8">OptimizeRequest: { strategy, userText, spending: SpendingBreakdown, filters: FormFilters, annualIncome?, householdIncome?, estimatedCreditScore? }</text>
+<text x="40"  y="2073" font-size="8" fill="#4C1D95">RecommendationResult: { card: CardSummary, breakdown: CategoryBreakdown[], totalValueCAD, netAnnualValue, eligibilityWarning? }  +  ArsenalCard: { name, purpose, description, visualConfig }</text>
+
+<!-- Arrow legend -->
+<line x1="20" y1="2095" x2="50" y2="2095" stroke="#2563EB" stroke-width="1.5" marker-end="url(#a-blue)"/>
+<text x="55" y="2099" font-size="8" fill="#374151">request / call</text>
+<line x1="130" y1="2095" x2="160" y2="2095" stroke="#2563EB" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#a-blue)"/>
+<text x="165" y="2099" font-size="8" fill="#374151">response / return</text>
+<rect x="235" y="2088" width="12" height="12" rx="2" fill="#DBEAFE"/>
+<text x="251" y="2099" font-size="8" fill="#374151">Flow 1: Chat Extract</text>
+<rect x="350" y="2088" width="12" height="12" rx="2" fill="#EDE9FE"/>
+<text x="366" y="2099" font-size="8" fill="#374151">Flow 2: Arsenal</text>
+<rect x="445" y="2088" width="12" height="12" rx="2" fill="#D1FAE5"/>
+<text x="461" y="2099" font-size="8" fill="#374151">Flow 3: Auth/Profiles</text>
+<rect x="560" y="2088" width="12" height="12" rx="2" fill="#FEF3C7"/>
+<text x="576" y="2099" font-size="8" fill="#374151">Flow 4: Save Cards</text>
+<rect x="666" y="2088" width="12" height="12" rx="2" fill="#FEE2E2"/>
+<text x="682" y="2099" font-size="8" fill="#374151">Flow 5: Re-sync</text>
+</svg>
+</body>
+</html>
